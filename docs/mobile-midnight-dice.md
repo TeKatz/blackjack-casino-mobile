@@ -94,4 +94,5 @@ verified in GitHub Actions. No 0.5 device launch or runtime visual acceptance is
 6. Equip an owned DiceSet or buy one with Coins. Verify the five dice and reduced
    animation setting after restart. Check portrait/landscape on the phone.
 
-0.5 hardware acceptance remains pending until the user tests the APK.
+The user reports that 0.5 runs without major errors and requested the next major
+integration. The detailed checklist above has not been individually confirmed.

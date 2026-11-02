@@ -21,6 +21,7 @@ public sealed partial class BlackjackSession
         this.createShoe = createShoe ?? (() => new Shoe(Rules));
         this.persist = persist;
         _ = new ProgressionService(Profile);
+        InitializeCasinoFloor();
     }
 
     public GameRules Rules { get; } = new();
@@ -61,6 +62,7 @@ public sealed partial class BlackjackSession
 
     public void StartRound(decimal bet) => Change(() =>
     {
+        if (HasSlotBonus) { throw new InvalidOperationException("Finish your saved slot bonus spins before starting Blackjack."); }
         if (IsDiceTableActive) { throw new InvalidOperationException("Finish or forfeit your Midnight Dice casino table first. Its entry fee is already paid."); }
         if (IsRoundActive) { throw new InvalidOperationException("Finish your current round first."); }
         if (bet < Rules.MinimumBet || bet > Rules.MaximumBet || decimal.Truncate(bet) != bet)
@@ -123,7 +125,7 @@ public sealed partial class BlackjackSession
 
     public void RefillPracticeCash() => Change(() =>
     {
-        if (IsRoundActive || IsDiceTableActive || Bankroll >= Rules.MinimumBet) { throw new InvalidOperationException("Refill is available only between games when cash is below the minimum bet."); }
+        if (IsRoundActive || IsDiceTableActive || HasSlotBonus || Bankroll >= Rules.MinimumBet) { throw new InvalidOperationException("Refill is available only between games when cash is below the minimum bet."); }
         state.Bankroll = StartingCash;
         state.Journal = null;
         state.LastAward = ProgressionAward.None;
@@ -144,7 +146,8 @@ public sealed partial class BlackjackSession
         if (!claim.Success) { throw new InvalidOperationException(claim.Message); }
     });
     public static bool SupportedChallenge(ChallengeDefinition challenge) =>
-        (challenge.Category is ChallengeCategory.Blackjack or ChallengeCategory.Lifetime or ChallengeCategory.MidnightDice)
+        (challenge.Category is ChallengeCategory.Blackjack or ChallengeCategory.Lifetime or ChallengeCategory.MidnightDice
+            or ChallengeCategory.MidnightReels or ChallengeCategory.NeonVault or ChallengeCategory.NineLives)
         && challenge.Metric != ChallengeMetric.LifetimePlaytimeSeconds;
     public void PurchaseTitle(string id) => Change(() =>
     {
@@ -222,7 +225,7 @@ public sealed partial class BlackjackSession
     private void ChangeUnderLock(Action change)
     {
         MobileState before = Export();
-        try { change(); persist?.Invoke(Export()); }
+        try { change(); _ = CasinoVaultService.SyncFromStatistics(Profile); persist?.Invoke(Export()); }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or NotSupportedException)
         {
             Load(before);
@@ -240,6 +243,8 @@ public sealed partial class BlackjackSession
         Validate(saved);
         state = MobileJson.Clone(saved);
         _ = new ProgressionService(Profile);
+        InitializeCasinoFloor();
+        ValidateCasinoFloor();
         ValidateDice();
         if (state.RevealedCards is < 0 or > CollectionCatalog.CardsPerPack
             || state.RevealedCards != 0 && Profile.Collection.PendingOpening is null)
@@ -301,4 +306,3 @@ public sealed partial class BlackjackSession
         { throw new InvalidDataException("Invalid saved cards."); }
     }
 }
-

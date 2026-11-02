@@ -80,6 +80,13 @@ public sealed class PlayerHubPage : ContentPage
         diceStats.Add(Text($"Wagered {Cash(dice.TotalWagered)} · Returned {Cash(dice.TotalReturned)}"));
         diceStats.Add(Text($"Net {Net(dice.NetProfit)} · Biggest payout {Cash(dice.BiggestPayout)}"));
         body.Add(Box(diceStats));
+        var slots = new VerticalStackLayout { Spacing = 10 };
+        slots.Add(Text("CASINO FLOOR", 20, Gold));
+        slots.Add(Text($"Midnight Reels · {session.Profile.Slots.Spins:N0} spins · Net {Net(session.Profile.Slots.NetProfit)}"));
+        slots.Add(Text($"Neon Vault · {session.Profile.NeonVault.Spins:N0} spins · Net {Net(session.Profile.NeonVault.NetProfit)}"));
+        slots.Add(Text($"Nine Lives · {session.Profile.NineLives.Spins:N0} spins · Net {Net(session.Profile.NineLives.NetProfit)}"));
+        body.Add(Box(slots));
+        body.Add(Button("FLOOR STATISTICS & SPIN HISTORY", "ProfileSlots", async (_, _) => await Navigation.PushAsync(new CasinoFloorPage(session, true))));
         body.Add(Button("OPEN MIDNIGHT DICE", "ProfileDice", async (_, _) => await Navigation.PushAsync(new DiceRoomPage(session))));
         body.Add(Button($"ALBUM · {session.Profile.Collection.OwnedCardIds.Count}/{CollectionCatalog.Cards.Count} CARDS · {session.Profile.Collection.Packs.Values.Sum()} PACKS",
             "ProfileAlbum", async (_, _) => await Navigation.PushAsync(new AlbumPage(session))));
@@ -109,7 +116,7 @@ public sealed class PlayerHubPage : ContentPage
             .Where(item => item.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
             .OrderBy(item => session.Profile.ClaimedChallengeIds.Contains(item.Id) ? 2
                 : ChallengeCatalog.Complete(session.Profile, item) ? 0 : 1).ToArray();
-        body.Add(Text("Blackjack, Midnight Dice and supported lifetime goals. Claiming uses the same rewards as Desktop, including packs you can open in the Album.", 15, Muted));
+        body.Add(Text("Blackjack, Midnight Dice, Midnight Reels, Neon Vault, Nine Lives and supported lifetime goals. Rewards use the existing Core, including packs you can open in the Album.", 15, Muted));
         foreach (ChallengeDefinition challenge in all.Skip(page * 10).Take(10))
         {
             bool claimed = session.Profile.ClaimedChallengeIds.Contains(challenge.Id);
@@ -143,7 +150,7 @@ public sealed class PlayerHubPage : ContentPage
         SeasonProgressState progress = session.Profile.Seasons[season.Id];
         body.Add(Text(season.Description, 16, Muted));
         body.Add(Text($"Tier {progress.Tier} / {season.Tiers.Count} · {progress.Experience:N0} season XP", 21, Gold));
-        body.Add(Text("Rewards unlock automatically as you play Blackjack and Midnight Dice. Packs are available in the Album; dice sets can be equipped in the Dice room. Other cosmetics remain saved for later integrations.", 15, Muted));
+        body.Add(Text("Rewards unlock automatically across Blackjack, Midnight Dice and the Casino Floor. Packs are available in the Album; dice sets can be equipped in the Dice room. Other cosmetics remain saved for later integrations.", 15, Muted));
         foreach (SeasonTierDefinition tier in season.Tiers.Skip(page * 10).Take(10))
         {
             string cosmetic = tier.CosmeticId is null ? "" : $" · {CosmeticCatalog.Get(tier.CosmeticId).Name}";
@@ -197,8 +204,10 @@ public sealed class PlayerHubPage : ContentPage
             session.SetReducedPackAnimations, "ReducePackAnimations");
         AddSwitch("Reduce dice animations", session.Settings.ReduceDiceAnimations,
             session.SetReducedDiceAnimations, "ReduceDiceAnimations");
+        AddSwitch("Reduce slot animations", session.Settings.ReduceSlotAnimations,
+            session.SetReducedSlotAnimations, "ReduceSlotAnimations");
         body.Add(Text("Every accepted action saves your cash, profile, open Blackjack hand and Dice games on this device. A previous-save backup is kept for recovery. Uninstalling removes local data.", 15, Muted));
-        body.Add(Text("Mobile preview · 0.5.0", 14, Gold));
+        body.Add(Text("Mobile preview · 0.6.0", 14, Gold));
     }
 
     private void AddSwitch(string caption, bool enabled, Action<bool> changed, string id)
@@ -225,4 +234,3 @@ public sealed class PlayerHubPage : ContentPage
         Render();
     }
 }
-

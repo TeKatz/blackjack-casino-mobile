@@ -8,6 +8,7 @@ public sealed class MobileSettings
 {
     public bool ReducePackAnimations { get; set; }
     public bool ReduceDiceAnimations { get; set; }
+    public bool ReduceSlotAnimations { get; set; }
     public bool LargeCards { get; set; }
     public bool ConfirmSurrender { get; set; } = true;
     public decimal LastWager { get; set; } = 25m;
@@ -48,6 +49,7 @@ public sealed class MobileState
     public KniffelTableState? DiceTable { get; set; }
     public ProgressionAward CasualDiceAward { get; set; } = ProgressionAward.None;
     public ProgressionAward DiceTableAward { get; set; } = ProgressionAward.None;
+    public MobileCasinoFloor? CasinoFloor { get; set; }
 }
 
 public static class MobileJson
@@ -69,4 +71,3 @@ internal sealed class SavedShoe(ShoeState state) : ICardShoe
         return State.Cards[State.Position++];
     }
 }
-

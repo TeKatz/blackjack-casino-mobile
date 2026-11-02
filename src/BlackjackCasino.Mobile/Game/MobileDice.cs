@@ -23,6 +23,7 @@ public sealed partial class BlackjackSession
 
     public void StartDiceTable(decimal stake) => Change(() =>
     {
+        if (HasSlotBonus) { throw new InvalidOperationException("Finish your saved slot bonus spins before entering a paid Dice table."); }
         if (IsRoundActive) { throw new InvalidOperationException("Finish your saved Blackjack round before entering a casino table. Casual Dice remains available."); }
         KniffelCashChange entry = KniffelCash.Start(Bankroll, state.DiceTable, stake, _ => { });
         // A completed Blackjack journal contains its old wallet total. Retain history,

@@ -83,8 +83,8 @@ public sealed class DiceRoomPage : ContentPage
             for (int place = 1; place <= 4; place++)
             { casino.Add(Text($"Place {place} · {Cash(KniffelTable.PrizeForPlace(stake, place))}", 16)); }
             casino.Add(Text("Tied scores share the prizes for their occupied places, rounded down to cents. Leaving saves the table; forfeiting loses the entry fee.", 14, Muted));
-            if (session.IsRoundActive)
-            { casino.Add(Text("Finish your saved Blackjack round to enter this table. You can play Casual Dice now.", 16, Gold)); }
+            if (session.IsRoundActive || session.HasSlotBonus)
+            { casino.Add(Text("Finish your saved Blackjack round or slot bonus to enter this table. You can play Casual Dice now.", 16, Gold)); }
             if (confirmedStake == stake)
             {
                 casino.Add(Text($"Pay {Cash(stake)} play cash and take your seat?", 19, Gold));
@@ -94,7 +94,7 @@ public sealed class DiceRoomPage : ContentPage
             else
             {
                 var enter = Button($"ENTER TABLE · {Cash(stake)}", "EnterDiceTable", (_, _) => { confirmedStake = stake; Render(); }, true);
-                enter.IsEnabled = !session.IsRoundActive && session.Bankroll >= stake;
+                enter.IsEnabled = !session.IsRoundActive && !session.HasSlotBonus && session.Bankroll >= stake;
                 casino.Add(enter);
                 if (session.Bankroll < stake) { casino.Add(Text("Choose a lower entry fee or build your play cash at Blackjack.", 15, Muted)); }
             }

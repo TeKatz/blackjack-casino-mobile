@@ -26,3 +26,7 @@ Mobile 0.5 adds Midnight Dice. Read docs/mobile-midnight-dice.md before changing
 its checkpoints, paid-game exclusion, AI commit or settlement. Reuse Core Kniffel
 rules/progression; paid tables spend play cash, while cosmetics and packs spend Coins.
 
+Mobile 0.6 adds the Casino Floor and Casino Vault. Read docs/mobile-casino-floor.md
+before changing bonus checkpoints, spin receipts, Vault migration or cash-game locks.
+Bonus state must survive restarts. Never call progression or settle cash while replaying
+a saved spin result. Keep the stable development signing identity for in-place upgrades.

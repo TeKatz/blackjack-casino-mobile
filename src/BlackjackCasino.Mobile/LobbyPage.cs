@@ -41,8 +41,14 @@ public sealed class LobbyPage : ContentPage
         body.Add(Box(identity));
         var blackjack = Open(session.IsRoundActive ? "RESUME YOUR ROUND" : "PLAY BLACKJACK", "OpenBlackjack",
             () => new BlackjackTablePage(session), true);
-        blackjack.IsEnabled = !session.IsDiceTableActive;
+        blackjack.IsEnabled = !session.IsDiceTableActive && !session.HasSlotBonus;
         body.Add(blackjack);
+        body.Add(Open(session.HasSlotBonus ? "CASINO FLOOR · CONTINUE BONUS SPINS" : "CASINO FLOOR · THREE SLOT MACHINES",
+            "OpenCasinoFloor", () => new CasinoFloorPage(session), session.HasSlotBonus));
+        if (session.HasSlotBonus) { body.Add(Text("Your slot bonus is saved. Finish its free spins before starting Blackjack or a paid Dice table.", 14, Gold)); }
+        var vault = session.Vault;
+        body.Add(Open(vault.IsFull ? "CASINO VAULT · CASH & PACK READY" : $"CASINO VAULT · {vault.Progress:P0}",
+            "OpenCasinoVault", () => new CasinoVaultPage(session), vault.IsFull));
         body.Add(Open(session.IsDiceTableActive ? "MIDNIGHT DICE · RESUME PAID TABLE" : "MIDNIGHT DICE · CASUAL & CASINO",
             "OpenMidnightDice", () => new DiceRoomPage(session), session.IsDiceTableActive));
         if (session.IsDiceTableActive)
@@ -92,4 +98,3 @@ public sealed class LobbyPage : ContentPage
         "title-amber" => Color.FromArgb("#FFBE75"), _ => Gold,
     };
 }
-

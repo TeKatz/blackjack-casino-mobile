@@ -305,6 +305,15 @@ public sealed class NeonVaultSpinResult
 /// Resolves Neon Vault outcomes before presentation starts. Animation may emphasize near misses
 /// and feature transitions but never changes the already settled grid or bankroll result.
 /// </summary>
+public sealed record NeonVaultCheckpoint
+{
+    public int Version { get; init; } = 1;
+    public int FreeSpinsRemaining { get; init; }
+    public decimal BonusBet { get; init; }
+    public int VaultEnergy { get; init; }
+    public bool SecurityOverrideArmed { get; init; }
+}
+
 public sealed class NeonVaultSession
 {
     private readonly Func<int, int> nextInt;
@@ -322,6 +331,29 @@ public sealed class NeonVaultSession
     public int FreeSpinsRemaining { get; private set; }
     public int VaultEnergy { get; private set; }
     public bool BonusActive => FreeSpinsRemaining > 0;
+
+    public NeonVaultCheckpoint Checkpoint => new()
+    {
+        FreeSpinsRemaining = FreeSpinsRemaining, BonusBet = bonusBet,
+        VaultEnergy = VaultEnergy, SecurityOverrideArmed = securityOverrideArmed,
+    };
+
+    public static NeonVaultSession Restore(decimal bankroll, NeonVaultCheckpoint checkpoint, Func<int, int>? nextInt = null)
+    {
+        ArgumentNullException.ThrowIfNull(checkpoint);
+        if (checkpoint.Version != 1 || checkpoint.FreeSpinsRemaining < 0
+            || checkpoint.FreeSpinsRemaining > int.MaxValue - 16 || checkpoint.VaultEnergy < 0
+            || checkpoint.VaultEnergy > int.MaxValue - NeonVaultRules.Cells
+            || checkpoint.SecurityOverrideArmed && checkpoint.FreeSpinsRemaining == 0
+            || checkpoint.FreeSpinsRemaining > 0 && checkpoint.BonusBet == 0)
+        { throw new ArgumentException("Invalid Neon Vault checkpoint.", nameof(checkpoint)); }
+        if (checkpoint.BonusBet != 0) { ValidateBet(checkpoint.BonusBet); }
+        return new NeonVaultSession(bankroll, nextInt)
+        {
+            FreeSpinsRemaining = checkpoint.FreeSpinsRemaining, bonusBet = checkpoint.BonusBet,
+            VaultEnergy = checkpoint.VaultEnergy, securityOverrideArmed = checkpoint.SecurityOverrideArmed,
+        };
+    }
 
     public NeonVaultSpinResult Spin(decimal requestedBet)
     {

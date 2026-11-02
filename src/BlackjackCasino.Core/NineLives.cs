@@ -192,6 +192,13 @@ public sealed record NineLivesSpinResult(
 /// Compact high-volatility 3x3 slot. Outcomes settle before presentation; Pounce Wild and
 /// Nine Lives anticipation are visualized afterwards and never depend on animation timing.
 /// </summary>
+public sealed record NineLivesCheckpoint
+{
+    public int Version { get; init; } = 1;
+    public int BonusSpinsRemaining { get; init; }
+    public decimal BonusBet { get; init; }
+}
+
 public sealed class NineLivesSession
 {
     private readonly Func<int, int> nextInt;
@@ -207,6 +214,20 @@ public sealed class NineLivesSession
     public decimal Bankroll { get; private set; }
     public int BonusSpinsRemaining { get; private set; }
     public bool BonusActive => BonusSpinsRemaining > 0;
+
+    public NineLivesCheckpoint Checkpoint => new() { BonusSpinsRemaining = BonusSpinsRemaining, BonusBet = bonusBet };
+
+    public static NineLivesSession Restore(decimal bankroll, NineLivesCheckpoint checkpoint, Func<int, int>? nextInt = null)
+    {
+        ArgumentNullException.ThrowIfNull(checkpoint);
+        if (checkpoint.Version != 1 || checkpoint.BonusSpinsRemaining < 0
+            || checkpoint.BonusSpinsRemaining > int.MaxValue - NineLivesRules.BonusSpins
+            || checkpoint.BonusSpinsRemaining > 0 && checkpoint.BonusBet == 0)
+        { throw new ArgumentException("Invalid Nine Lives checkpoint.", nameof(checkpoint)); }
+        if (checkpoint.BonusBet != 0) { ValidateBet(checkpoint.BonusBet); }
+        return new NineLivesSession(bankroll, nextInt)
+        { BonusSpinsRemaining = checkpoint.BonusSpinsRemaining, bonusBet = checkpoint.BonusBet };
+    }
 
     public NineLivesSpinResult Spin(decimal requestedBet)
     {
