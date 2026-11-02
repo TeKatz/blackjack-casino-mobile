@@ -15,7 +15,11 @@ OUT=Path('visual-proof');OUT.mkdir(exist_ok=True)
 shots=[]
 
 def adb(*args, timeout=40):
-    return subprocess.check_output(['adb',*args],timeout=timeout).decode('utf-8',errors='replace')
+    try:
+        return subprocess.check_output(['adb',*args],timeout=timeout,stderr=subprocess.STDOUT).decode('utf-8',errors='replace')
+    except subprocess.CalledProcessError as error:
+        print('ADB FAILURE:',error.output.decode('utf-8',errors='replace'),flush=True)
+        raise
 
 def hierarchy():
     adb('shell','uiautomator','dump','/sdcard/club-window.xml')
@@ -56,12 +60,17 @@ def shot(name):
 
 def home():
     adb('shell','am','force-stop',PACKAGE)
-    adb('shell','am','start','-W','-a','android.intent.action.MAIN','-c','android.intent.category.LAUNCHER','-p',PACKAGE)
+    resolved=adb('shell','cmd','package','resolve-activity','--brief','-a','android.intent.action.MAIN','-c','android.intent.category.LAUNCHER',PACKAGE)
+    print('LAUNCH COMPONENT:',resolved,flush=True)
+    component=next((line.strip() for line in resolved.splitlines() if '/' in line and PACKAGE in line),None)
+    if component is None:raise RuntimeError('No launcher component: '+resolved)
+    print(adb('shell','am','start','-W','-n',component),flush=True)
     find(['HomeTab','A different kind of night.'],wait=40);time.sleep(.4)
 
 def main():
     apk=next(Path('test-apk').glob('*.apk'))
-    adb('install','-r',str(apk),timeout=120)
+    print(adb('install','-r',str(apk),timeout=120),flush=True)
+    print(adb('shell','pm','list','packages',PACKAGE),flush=True)
     home();shot('01-lobby')
     tap('OpenBlackjack','Blackjack');shot('02-blackjack-ready')
     tap('DealCards','DEAL CARDS');time.sleep(.9);shot('03-blackjack-deal')
@@ -107,6 +116,6 @@ if __name__=='__main__':
     try:main()
     except Exception:
         try:
-            shot('FAILED');(OUT/'logcat.txt').write_text(adb('logcat','-d','-t','350'))
+            shot('FAILED');(OUT/'logcat.txt').write_text(adb('logcat','-d'));print(adb('logcat','-d','-s','AndroidRuntime:E','ActivityTaskManager:E'),flush=True)
         except Exception:pass
         raise

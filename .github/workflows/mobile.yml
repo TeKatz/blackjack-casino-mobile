@@ -3,10 +3,10 @@ name: Android foundation
 on:
   push:
     branches: [main, development, 'mobile/**', 'fix/**']
-    paths-ignore: ['docs/**', '**/*.md']
+    paths-ignore: ['docs/**', '**/*.md', 'tools/mobile/visual_smoke.py', 'tools/mobile/visual-smoke-source.json', '.github/workflows/visual-regression.yml']
   pull_request:
     branches: [main, development]
-    paths-ignore: ['docs/**', '**/*.md']
+    paths-ignore: ['docs/**', '**/*.md', 'tools/mobile/visual_smoke.py', 'tools/mobile/visual-smoke-source.json', '.github/workflows/visual-regression.yml']
   workflow_dispatch:
 
 permissions:
