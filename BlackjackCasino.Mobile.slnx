@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/BlackjackCasino.Core/BlackjackCasino.Core.csproj" />
+  <Project Path="src/BlackjackCasino.Mobile/BlackjackCasino.Mobile.csproj" />
+</Solution>

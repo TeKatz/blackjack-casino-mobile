@@ -1,0 +1,105 @@
+name: Android foundation
+
+on:
+  push:
+    branches: [main, development, 'mobile/**', 'fix/**']
+    paths-ignore: ['docs/**', '**/*.md']
+  pull_request:
+    branches: [main, development]
+    paths-ignore: ['docs/**', '**/*.md']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      revision: ${{ steps.revision.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Import pinned desktop baseline once
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: bash tools/mobile/import-desktop.sh
+      - name: Resolve exact build revision
+        id: revision
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  core-and-desktop:
+    needs: prepare
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.revision }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Validate inherited desktop assets and resources
+        shell: pwsh
+        run: |
+          python tools/check_localization.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -X warn_default_encoding -W error::EncodingWarning tools/check_collection_art.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/check_control_templates.py --self-test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build desktop without Android workloads
+        run: dotnet build BlackjackCasino.sln -c Release
+      - name: Run original Core, persistence and progression tests
+        run: dotnet test tests/BlackjackCasino.Tests/BlackjackCasino.Tests.csproj -c Release --no-build --logger trx --results-directory TestResults
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: core-and-desktop-test-results
+          path: TestResults
+          if-no-files-found: ignore
+
+  apk:
+    needs: [prepare, core-and-desktop]
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.revision }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Install Android-only MAUI workload
+        run: dotnet workload install maui-android
+      - name: Install required Android SDK packages
+        shell: pwsh
+        run: dotnet build src/BlackjackCasino.Mobile/BlackjackCasino.Mobile.csproj -t:InstallAndroidDependencies -f net10.0-android -p:AndroidSdkDirectory="$env:ANDROID_HOME" -p:AcceptAndroidSDKLicenses=true
+      - name: Build self-contained development APK
+        run: dotnet build src/BlackjackCasino.Mobile/BlackjackCasino.Mobile.csproj -c Debug -f net10.0-android -t:SignAndroidPackage -p:EmbedAssembliesIntoApk=true
+      - name: Collect signed APK and checksum
+        shell: pwsh
+        run: |
+          $apks = @(Get-ChildItem src/BlackjackCasino.Mobile/bin/Debug/net10.0-android -Recurse -Filter '*-Signed.apk')
+          if ($apks.Count -ne 1) { throw "Expected one signed APK, found $($apks.Count)." }
+          New-Item artifacts -ItemType Directory -Force | Out-Null
+          Copy-Item $apks[0].FullName artifacts/BlackjackEmpire-debug.apk
+          $hash = (Get-FileHash artifacts/BlackjackEmpire-debug.apk -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  BlackjackEmpire-debug.apk" | Set-Content artifacts/BlackjackEmpire-debug.apk.sha256
+          "Build revision: ${{ needs.prepare.outputs.revision }}" | Set-Content artifacts/build-revision.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BlackjackEmpire-debug-apk
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 14
