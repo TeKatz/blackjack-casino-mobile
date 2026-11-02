@@ -58,7 +58,7 @@ Verified CI: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/4141
 - Tested app revision: `9d9c297476c9e3486aeba435072d7b4056af576b`.
 - APK: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41414109291/artifacts/13127865272
 - Artifact ZIP: approximately 83.5 MB; expires 2026-11-16.
-- Device acceptance of 0.3 persistence and new screens is still pending; the user confirmed 0.2 Blackjack gameplay.
+- The user confirmed the complete 0.3 device acceptance test passed successfully, including profile/restart behavior. This accepted version is the base for 0.4.
 - Changes are pushed on the feature branch, with no merge to main/development.
 
 Version-1 journal replay uses the fixed six-deck/S17 Core rules of this baseline.

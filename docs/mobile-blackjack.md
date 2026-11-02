@@ -43,7 +43,7 @@ Verified CI run: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/
 - Download: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41388527228/artifacts/13116379025
 - Artifact available until 2026-11-16; includes APK, checksum and revision.
 - Feature remains on `mobile/blackjack-round`; no merge to main or development.
-- New-version device testing remains pending. Only the earlier foundation has user-confirmed hardware launch/navigation.
+- The user confirmed Blackjack was playable without problems on the device. The later 0.3 profile/restart acceptance test also passed.
 
 ## Device checklist
 

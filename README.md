@@ -21,11 +21,12 @@ and reduced pack animations.
 
 Download `BlackjackEmpire-debug-apk` from a successful **Android foundation** Actions run,
 extract `BlackjackEmpire-debug.apk`, and install it on Android 8.0 or later.
-0.3 introduces a stable development signing identity; installing over 0.2 may require
-one uninstall. Keep 0.3 installed for later updates to preserve its new local profile.
+Install 0.4 over the existing 0.3 app without uninstalling. The signing identity and
+application ID are unchanged, preserving the local profile. The old 0.1/0.2 previews
+used temporary signing keys and had no durable profile.
 No desktop saves are imported or changed.
 
-The 0.3 profile/restart device test passed. The new 0.4 APK is delivered after CI validation.
+[Download the verified 0.4.0 preview](https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41418739013/artifacts/13129322624). The 0.3 profile/restart device test passed; the new Album device checklist is ready.
 
 See [album integration and device checklist](docs/mobile-collector-album.md), and the [profile architecture](docs/mobile-profile-progression.md).
 

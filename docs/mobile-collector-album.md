@@ -62,7 +62,16 @@ New tests cover old-profile migration, welcome-pack non-duplication, receipts an
 position, duplicate recycling, purchases, theme rewards, storage-failure rollback,
 invalid reveal states and simultaneous Blackjack/album restoration. Existing tests remain.
 Artwork preparation and representative normal/ultra-rare image inspection completed locally.
-CI and APK evidence will be recorded after validation.
+Verified CI: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41418739013
+- Desktop reference Release build: 0 warnings / 0 errors; no Android workload needed.
+- 463 tests passed, 0 failed, 0 skipped (10 new album integration cases).
+- Android preparation: 136 unique images from 16 verified atlases, 13.91 MB combined.
+- APK build and stable development signing: successful, 0 warnings / 0 errors.
+- Tested application revision: `af124b04642f03d26a6e95f985f79779fff4cdfc`.
+- Download: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41418739013/artifacts/13129322624
+- Artifact ZIP approximately 97.5 MB, available until 2026-11-16, including artwork report.
+- Development key, application ID, inherited Core and desktop source unchanged.
+- New-version device acceptance remains pending; install over the accepted 0.3 profile.
 
 ## Device acceptance
 
