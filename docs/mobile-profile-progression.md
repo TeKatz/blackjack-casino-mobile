@@ -51,7 +51,19 @@ season rewards, challenge claims, ownership, failed-write rollback, corrupted sa
 backup recovery, unsupported versions and bounded history. Pure Game code remains
 linked into the test project without requiring Android workloads.
 
-CI/build and APK evidence will be recorded after validation completes.
+Verified CI: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41414109291
+- Desktop reference Release build: 0 warnings / 0 errors, no Android workload needed.
+- 453 tests passed, 0 failed, 0 skipped (12 new persistence/progression cases).
+- Android APK build and stable development signing: successful, 0 warnings / 0 errors.
+- Tested app revision: `9d9c297476c9e3486aeba435072d7b4056af576b`.
+- APK: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41414109291/artifacts/13127865272
+- Artifact ZIP: approximately 83.5 MB; expires 2026-11-16.
+- Device acceptance of 0.3 persistence and new screens is still pending; the user confirmed 0.2 Blackjack gameplay.
+- Changes are pushed on the feature branch, with no merge to main/development.
+
+Version-1 journal replay uses the fixed six-deck/S17 Core rules of this baseline.
+Future rule-default or engine changes must preserve this replay contract or migrate
+active journals explicitly. Replaying must never call the reward processor.
 
 ## Device acceptance
 
