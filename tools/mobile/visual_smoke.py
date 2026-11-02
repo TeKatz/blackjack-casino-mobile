@@ -22,7 +22,10 @@ def adb(*args, timeout=40):
         raise
 
 def hierarchy():
-    adb('shell','uiautomator','dump','/sdcard/club-window.xml')
+    result=adb('shell','uiautomator','dump','/sdcard/club-window.xml')
+    if 'dumped to:' not in result:
+        print('UI snapshot not ready:',result.strip(),flush=True)
+        return ET.Element('hierarchy')
     return ET.fromstring(adb('shell','cat','/sdcard/club-window.xml'))
 
 def nodes():
@@ -65,7 +68,8 @@ def home():
     component=next((line.strip() for line in resolved.splitlines() if '/' in line and PACKAGE in line),None)
     if component is None:raise RuntimeError('No launcher component: '+resolved)
     print(adb('shell','am','start','-W','-n',component),flush=True)
-    find(['HomeTab','A different kind of night.'],wait=40);time.sleep(.4)
+    time.sleep(2)
+    find(['HomeTab','A different kind of night.'],wait=75);time.sleep(.4)
 
 def main():
     apk=next(Path('test-apk').glob('*.apk'))
