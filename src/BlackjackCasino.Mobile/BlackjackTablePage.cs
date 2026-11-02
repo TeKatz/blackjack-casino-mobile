@@ -6,14 +6,18 @@ using static BlackjackCasino.Mobile.CasinoStyle;
 
 namespace BlackjackCasino.Mobile;
 
-public sealed class BlackjackTablePage : ContentPage
+public sealed class BlackjackTablePage : CasinoPage
 {
     private readonly BlackjackSession session;
     private readonly VerticalStackLayout table = new()
     {
-        Padding = new Thickness(20, 24), Spacing = 18, MaximumWidthRequest = 620,
+        Padding = new Thickness(20, 24), Spacing = 14, MaximumWidthRequest = 760,
         HorizontalOptions = LayoutOptions.Center,
     };
+    private readonly VerticalStackLayout header = new() { Padding = new Thickness(18, 10), Spacing = 5 };
+    private readonly VerticalStackLayout dock = new() { Padding = new Thickness(16, 10), Spacing = 8 };
+    private readonly Dictionary<string, (Card? Face, View View)> cardViews = [];
+    private readonly Grid root = new() { RowDefinitions = { new RowDefinition { Height = GridLength.Auto }, new RowDefinition { Height = GridLength.Star }, new RowDefinition { Height = GridLength.Auto } } };
     private string betText = "25";
     private string? error;
     private bool busy;
@@ -25,18 +29,19 @@ public sealed class BlackjackTablePage : ContentPage
         betText = session.Settings.LastWager.ToString(CultureInfo.InvariantCulture);
         Title = "Blackjack";
         BackgroundColor = Ink;
-        Content = new ScrollView { Content = table };
+        var felt = new GraphicsView { Drawable = new FeltArt(), InputTransparent = true }; Grid.SetRowSpan(felt,3); root.Add(felt);
+        header.BackgroundColor = Color.FromArgb("#0D211C"); dock.Background = Gradient("#142D24", "#091B15");
+        root.Add(header); root.Add(new ScrollView { Content = table }, 0, 1); root.Add(dock, 0, 2); Content = root;
         Render();
     }
 
     private void Render()
     {
-        table.Children.Clear();
-        table.Add(Text($"{session.Profile.DisplayName} · LEVEL {session.Profile.Level} · {session.Profile.Coins:N0} COINS", 13, Gold));
-        table.Add(Text($"{Cash(session.AvailableCash)} available", 27, Gold));
+        table.Children.Clear(); dock.Children.Clear(); header.Children.Clear(); cardViews.Clear();
+        header.Add(CasinoStyle.Columns(Metric("YOUR TABLE", "Blackjack"), Metric("AVAILABLE CASH", Cash(session.AvailableCash), Gold)));
         if (session.IsRoundActive)
         {
-            table.Add(Text($"At the table · {Cash(session.Committed)}", 15, Muted));
+            header.Add(Text($"{Cash(session.Committed)} in play · 6 decks · S17 · Blackjack pays 3:2", 10, Muted));
         }
         if (error is not null)
         {
@@ -62,6 +67,12 @@ public sealed class BlackjackTablePage : ContentPage
             }
         }
         if (!session.IsRoundActive) { AddBettingControls(); }
+        if (round is null)
+        {
+            var welcome = new VerticalStackLayout { Spacing = 18, Padding = new Thickness(0, 30), HorizontalOptions = LayoutOptions.Center };
+            welcome.Add(PlayingCardView.Preview(session.Profile.EquippedCardSetId)); welcome.Add(Text("Your seat is waiting.", 27, Gold));
+            welcome.Add(Text("BLACKJACK PAYS 3 TO 2", 10, Gold)); table.Add(welcome);
+        }
         if (round is not null)
         {
             AddDealer(round);
@@ -72,7 +83,7 @@ public sealed class BlackjackTablePage : ContentPage
                 var content = new VerticalStackLayout { Spacing = 12 };
                 string title = round.PlayerHands.Count == 1 ? "YOUR HAND" : $"HAND {i + 1}";
                 content.Add(Text($"{title}{(active ? " · YOUR TURN" : "")} · {Cash(hand.Bet)}", 14, active ? Gold : Muted));
-                content.Add(CardRow(hand.Cards.Select(card => (Card?)card)));
+                content.Add(CardRow(hand.Cards.Select(card => (Card?)card), "hand" + i));
                 content.Add(Text(HandTotal(hand), 21, hand.Value.IsBust ? Loss : Colors.White));
                 if (round.Result is { } settled)
                 {
@@ -89,8 +100,8 @@ public sealed class BlackjackTablePage : ContentPage
                 table.Add(Text($"Insurance · {Net(round.Result!.InsuranceNet)}", 15, Muted));
             }
         }
-        table.Add(Text("6 decks · Blackjack pays 3:2\nDealer stands on soft 17", 14, Muted));
-        table.Add(Button("BACK TO LOBBY", "BackToLobby", async (_, _) => await Navigation.PopAsync()));
+        
+        table.Add(Button("LEAVE TABLE", "BackToLobby", async (_, _) => await Navigation.PopAsync()));
         if (session.IsRoundActive)
         {
             table.Add(Text("Your open round saves automatically, including after an app restart.", 13, Muted));
@@ -101,8 +112,8 @@ public sealed class BlackjackTablePage : ContentPage
     {
         if (session.Bankroll < session.Rules.MinimumBet)
         {
-            table.Add(Text("Your play cash is below the minimum bet. Refill to take another seat.", 16, Muted));
-            table.Add(Button("REFILL PLAY CASH", "RefillCash", (_, _) => Run(session.RefillPracticeCash), true));
+            dock.Add(Text("Your play cash is below the minimum bet. Refill to take another seat.", 16, Muted));
+            dock.Add(Button("REFILL PLAY CASH", "RefillCash", (_, _) => Run(session.RefillPracticeCash), true));
             return;
         }
         var entry = new Entry
@@ -113,8 +124,8 @@ public sealed class BlackjackTablePage : ContentPage
         };
         SemanticProperties.SetDescription(entry, "Play wager in whole dollars, from 1 to 1000.");
         entry.TextChanged += (_, args) => betText = args.NewTextValue ?? "";
-        table.Add(Text("CHOOSE YOUR WAGER", 13, Gold));
-        table.Add(entry);
+        dock.Add(Text("CHOOSE YOUR WAGER", 13, Gold));
+        dock.Add(entry);
         var chips = new Grid { ColumnSpacing = 8, ColumnDefinitions = Columns(4) };
         int column = 0;
         foreach (int amount in new[] { 10, 25, 50, 100 })
@@ -123,8 +134,8 @@ public sealed class BlackjackTablePage : ContentPage
             chip.IsEnabled = session.Bankroll >= amount;
             chips.Add(chip, column++, 0);
         }
-        table.Add(chips);
-        table.Add(Button(session.Round is null ? "DEAL CARDS" : "DEAL NEXT ROUND", "DealCards", (_, _) => Run(() =>
+        dock.Add(chips);
+        dock.Add(Button(session.Round is null ? "DEAL CARDS" : "DEAL NEXT ROUND", "DealCards", (_, _) => Run(() =>
         {
             if (!decimal.TryParse(betText.Trim(), NumberStyles.None,
                 CultureInfo.InvariantCulture, out decimal bet))
@@ -139,7 +150,7 @@ public sealed class BlackjackTablePage : ContentPage
     {
         var content = new VerticalStackLayout { Spacing = 12 };
         content.Add(Text("DEALER", 14, Muted));
-        content.Add(CardRow(session.DealerCards));
+        content.Add(CardRow(session.DealerCards, "dealer"));
         HandValue visible = session.VisibleDealerValue;
         string total = round.Phase == RoundPhase.Settled
             ? visible.IsBust ? $"Bust · {visible.Total}" : $"Total · {visible.Total}"
@@ -152,21 +163,21 @@ public sealed class BlackjackTablePage : ContentPage
 
     private void AddInsurance(BlackjackRound round)
     {
-        table.Add(Text($"Dealer shows an Ace. Insurance costs {Cash(round.InitialBet / 2m)} and pays 2:1 if the dealer has Blackjack.", 16, Muted));
+        dock.Add(Text($"Dealer shows an Ace. Insurance costs {Cash(round.InitialBet / 2m)} and pays 2:1 if the dealer has Blackjack.", 16, Muted));
         var insurance = Button("TAKE INSURANCE", "TakeInsurance", (_, _) => Run(session.TakeInsurance));
         insurance.IsEnabled = session.CanTakeInsurance;
-        table.Add(insurance);
-        table.Add(Button("NO INSURANCE", "DeclineInsurance", (_, _) => Run(session.DeclineInsurance), true));
+        dock.Add(insurance);
+        dock.Add(Button("NO INSURANCE", "DeclineInsurance", (_, _) => Run(session.DeclineInsurance), true));
     }
 
     private void AddPlayerActions()
     {
         if (surrenderPending)
         {
-            table.Add(Text("Surrender this hand and lose half its wager?", 18, Gold));
-            table.Add(Button("CONFIRM SURRENDER", "ConfirmSurrender", (_, _) => Run(() =>
+            dock.Add(Text("Surrender this hand and lose half its wager?", 18, Gold));
+            dock.Add(Button("CONFIRM SURRENDER", "ConfirmSurrender", (_, _) => Run(() =>
             { surrenderPending = false; session.Act(PlayerAction.Surrender); })));
-            table.Add(Button("KEEP PLAYING", "CancelSurrender", (_, _) => { surrenderPending = false; Render(); }, true));
+            dock.Add(Button("KEEP PLAYING", "CancelSurrender", (_, _) => { surrenderPending = false; Render(); }, true));
             return;
         }
         IReadOnlySet<PlayerAction> available = session.AvailableActions();
@@ -194,25 +205,33 @@ public sealed class BlackjackTablePage : ContentPage
             grid.Add(button, i % 2, i / 2);
             if (action == PlayerAction.Surrender) { Grid.SetColumnSpan(button, 2); }
         }
-        table.Add(grid);
+        dock.Add(grid);
     }
 
-    private void Run(Action command)
+    private async void Run(Action command)
     {
-        if (busy) { return; }
-        busy = true;
+        if (busy) { return; } busy = true;
+        BlackjackRound? oldRound = session.Round;
+        var before = cardViews.ToDictionary(item => item.Key, item => item.Value.Face);
         try
         {
-            error = null;
-            command();
+            error = null; command(); Render();
+            foreach (View button in dock.Children) { button.IsEnabled = false; }
+            if (!VisualMotion.Reduced())
+            {
+                var moving = cardViews.Where(pair => !ReferenceEquals(oldRound, session.Round) || !before.TryGetValue(pair.Key, out Card? face) || !EqualityComparer<Card?>.Default.Equals(face, pair.Value.Face)).ToArray();
+                int delay = 0;
+                foreach (var pair in moving)
+                {
+                    View view = pair.Value.View; view.TranslationX = 28; view.TranslationY = -48; view.Rotation = -10; view.Opacity = 0;
+                    await Task.Delay(delay == 0 ? 1 : 55); delay++;
+                    await Task.WhenAll(view.TranslateToAsync(0,0,180,Easing.CubicOut), view.RotateToAsync(0,180), view.FadeToAsync(1,140));
+                }
+                if (session.Round?.Result is { TotalNet: > 0 }) { VisualMotion.Celebrate(root, Gold); }
+            }
         }
-        catch (ArgumentException exception) { error = exception.Message.Split('\n')[0]; }
-        catch (InvalidOperationException exception) { error = exception.Message; }
-        finally
-        {
-            Render();
-            busy = false;
-        }
+        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException) { error = exception.Message.Split('\n')[0]; }
+        finally { busy = false; Render(); }
     }
 
     private static ColumnDefinitionCollection Columns(int count)
@@ -222,49 +241,26 @@ public sealed class BlackjackTablePage : ContentPage
         return result;
     }
 
-    private View CardRow(IEnumerable<Card?> cards)
+    private View CardRow(IEnumerable<Card?> cards, string prefix)
     {
-        var row = new HorizontalStackLayout { Spacing = 8 };
-        foreach (Card? card in cards) { row.Add(CardView(card)); }
-        return new ScrollView { Orientation = ScrollOrientation.Horizontal, Content = row, HeightRequest = session.Settings.LargeCards ? 138 : 114 };
+        var row = new HorizontalStackLayout { Spacing = 8, Padding = new Thickness(2, 5) }; int index = 0;
+        foreach (Card? card in cards)
+        {
+            Border view = PlayingCardView.Create(card, session.Profile.EquippedCardSetId, session.Settings.LargeCards);
+            cardViews[prefix + index++] = (card, view); row.Add(view);
+        }
+        return new ScrollView { Orientation = ScrollOrientation.Horizontal, Content = row, HeightRequest = session.Settings.LargeCards ? 137 : 115 };
     }
 
-    private Border CardView(Card? card)
+    private sealed class FeltArt : Microsoft.Maui.Graphics.IDrawable
     {
-        var frame = new Border
+        public void Draw(Microsoft.Maui.Graphics.ICanvas canvas, Microsoft.Maui.Graphics.RectF area)
         {
-            WidthRequest = session.Settings.LargeCards ? 92 : 76, HeightRequest = session.Settings.LargeCards ? 132 : 108, Padding = 8,
-            StrokeShape = new RoundRectangle { CornerRadius = 10 },
-            BackgroundColor = card.HasValue ? Color.FromArgb("#F4EFE5") : Ink,
-            Stroke = new SolidColorBrush(card.HasValue ? Color.FromArgb("#D4C9AD") : Gold),
-        };
-        if (card is not { } face)
-        {
-            frame.Content = new Label { Text = "♠", FontSize = 44, TextColor = Gold,
-                VerticalOptions = LayoutOptions.Center, HorizontalOptions = LayoutOptions.Center };
-            SemanticProperties.SetDescription(frame, "Face-down dealer card");
-            return frame;
+            canvas.StrokeColor = Gold.WithAlpha(.16f); canvas.StrokeSize = 1;
+            canvas.DrawEllipse(-area.Width * .12f, area.Height * .08f, area.Width * 1.24f, area.Height * .78f);
+            canvas.StrokeColor = Gold.WithAlpha(.06f);
+            canvas.DrawEllipse(-area.Width * .14f, area.Height * .06f, area.Width * 1.28f, area.Height * .82f);
         }
-        string rank = face.Rank switch
-        {
-            Rank.Ace => "A", Rank.Jack => "J", Rank.Queen => "Q", Rank.King => "K",
-            _ => ((int)face.Rank).ToString(CultureInfo.InvariantCulture),
-        };
-        string suit = face.Suit switch
-        {
-            Suit.Clubs => "♣", Suit.Diamonds => "♦", Suit.Hearts => "♥", _ => "♠",
-        };
-        Color color = face.Suit is Suit.Hearts or Suit.Diamonds ? Color.FromArgb("#A33145") : Ink;
-        var content = new Grid
-        {
-            RowDefinitions = { new RowDefinition { Height = GridLength.Auto }, new RowDefinition { Height = GridLength.Star } },
-        };
-        content.Add(new Label { Text = rank, FontSize = session.Settings.LargeCards ? 28 : 22, FontAttributes = FontAttributes.Bold, TextColor = color }, 0, 0);
-        content.Add(new Label { Text = suit, FontSize = session.Settings.LargeCards ? 44 : 36, TextColor = color,
-            HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center }, 0, 1);
-        frame.Content = content;
-        SemanticProperties.SetDescription(frame, face.ToString());
-        return frame;
     }
 
     private static string HandTotal(BlackjackHand hand) => hand.IsNaturalBlackjack ? "Blackjack · 21"

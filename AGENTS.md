@@ -30,3 +30,8 @@ Mobile 0.6 adds the Casino Floor and Casino Vault. Read docs/mobile-casino-floor
 before changing bonus checkpoints, spin receipts, Vault migration or cash-game locks.
 Bonus state must survive restarts. Never call progression or settle cash while replaying
 a saved spin result. Keep the stable development signing identity for in-place upgrades.
+
+Mobile 0.7 replaces placeholder presentation. Read docs/mobile-presentation.md before
+changing original asset extraction, reel motion or visual verification. Keep outcome
+settlement outside animations, retain reduced-motion behavior and inspect real Android
+screenshots before claiming visual acceptance. No primitive fallback slot symbols.

@@ -5,14 +5,18 @@ using static BlackjackCasino.Mobile.CasinoStyle;
 
 namespace BlackjackCasino.Mobile;
 
-public sealed class SlotMachinePage : ContentPage
+public sealed class SlotMachinePage : CasinoPage
 {
     private readonly BlackjackSession session;
     private readonly MobileSlotGame game;
     private readonly VerticalStackLayout body = new()
     { Padding = new Thickness(16, 22), Spacing = 16, MaximumWidthRequest = 620, HorizontalOptions = LayoutOptions.Center };
-    private readonly List<View> cells = [];
+    private readonly List<SlotReelColumn> reels = [];
+    private readonly VerticalStackLayout header = new() { Padding = new Thickness(18,10), Spacing = 5 };
+    private readonly VerticalStackLayout dock = new() { Padding = new Thickness(14,10), Spacing = 8 };
+    private readonly Grid root = new() { RowDefinitions = { new RowDefinition { Height = GridLength.Auto }, new RowDefinition { Height = GridLength.Star }, new RowDefinition { Height = GridLength.Auto } } };
     private CancellationTokenSource animation = new();
+    private bool compact;
     private decimal wager;
     private bool busy;
     private bool paytable;
@@ -22,23 +26,30 @@ public sealed class SlotMachinePage : ContentPage
     {
         this.session = session; this.game = game; wager = session.SlotBet(game);
         Title = CasinoFloorPage.Name(game); BackgroundColor = Ink;
-        Content = new ScrollView { Content = body };
+        StageStart = game == MobileSlotGame.NeonVault ? "#060A17" : "#100D18";
+        StageEnd = game == MobileSlotGame.NeonVault ? "#14102A" : "#25122C";
+        if (game == MobileSlotGame.NineLives)
+        { var background = new Image { Source = "club_cats_background.png", Aspect = Aspect.AspectFill, Opacity = .45, InputTransparent = true }; Grid.SetRowSpan(background,3); root.Add(background); }
+        header.BackgroundColor = Color.FromArgb("#090E16"); dock.Background = Gradient("#251A30", "#100E1A");
+        root.Add(header); root.Add(new ScrollView { Content = body },0,1); root.Add(dock,0,2); Content = root;
     }
     protected override void OnAppearing()
     { base.OnAppearing(); animation.Dispose(); animation = new(); wager = session.SlotBet(game); Render(); }
     protected override void OnDisappearing() { animation.Cancel(); base.OnDisappearing(); }
 
+    protected override void OnSizeAllocated(double width,double height)
+    {base.OnSizeAllocated(width,height);bool next=width>height&&height<550;if(next!=compact){compact=next;Render();}}
+
     private void Render()
     {
-        body.Children.Clear(); cells.Clear();
+        body.Children.Clear(); reels.Clear(); header.Children.Clear(); dock.Children.Clear();
         Color accent = CasinoFloorPage.Accent(game);
-        body.Add(Text(Title!.ToUpperInvariant(), 29, accent));
-        body.Add(Text($"{Cash(session.Bankroll)} PLAY CASH", 24));
+        header.Add(Columns(Metric("THE MIDNIGHT CLUB", Title!), Metric("PLAY CASH", Cash(session.Bankroll), Gold)));
         if (message is not null) { body.Add(Box(Text(message, 16, Gold))); }
         if (paytable) { Paytable(); return; }
         int free = session.FreeSlotSpins(game);
         if (free > 0)
-        { body.Add(Box(Text($"{free} FREE SPINS SAVED\nTrigger wager {Cash(session.SlotBet(game))} · No cash charged", 19, Win), true)); }
+        { body.Add(Pill($"{free} FREE SPINS · WAGER {Cash(session.SlotBet(game))}", Win)); }
         if (game == MobileSlotGame.NeonVault)
         { body.Add(Text($"Vault energy · {session.NeonEnergy} / {NeonVaultRules.VaultEnergyTarget}{(session.NeonOverrideArmed ? " · OVERRIDE READY" : "")}", 16, accent)); }
         MobileSlotReceipt? last = session.SlotHistory.FirstOrDefault(spin => spin.Game == game);
@@ -46,12 +57,12 @@ public sealed class SlotMachinePage : ContentPage
         if (last is not null)
         {
             string headline = last.Net > 0 ? "NET WIN · " + Net(last.Net) : last.Net < 0 ? "NET LOSS · " + Net(last.Net) : "EVEN · NO NET CHANGE";
-            body.Add(Box(Text(headline, 23, last.Net > 0 ? Win : last.Net < 0 ? Loss : Gold), true));
-            body.Add(Text($"{(last.IsBonus ? "Free spin" : "Paid spin")} · Bet {Cash(last.Bet)}\nCharged {Cash(last.Stake)} · Returned {Cash(last.Payout)}", 17));
-            foreach (string item in last.Events) { body.Add(Text(item, 14, accent)); }
+            body.Add(Box(Text(headline, 22, last.Net > 0 ? Win : last.Net < 0 ? Loss : Gold), true));
+            body.Add(Columns(Metric("CHARGED", Cash(last.Stake)), Metric("RETURNED", Cash(last.Payout), last.Payout > 0 ? Gold : Muted)));
+            foreach (string item in last.Events.Take(2)) { body.Add(Text(item, 11, accent)); }
             if (last.BonusAwarded > 0) { body.Add(Text($"+{last.BonusAwarded} FREE SPINS AWARDED", 21, Win)); }
-            body.Add(Text($"+{last.Award.PlayerExperience} XP · +{last.Award.SeasonExperience} season XP · +{last.Award.CoinsEarned} coins", 15, Gold));
-            body.Add(Text($"Saved result · {last.CompletedAt.ToLocalTime():g}", 13, Muted));
+            body.Add(Text($"+{last.Award.PlayerExperience} XP · +{last.Award.SeasonExperience} SEASON XP · +{last.Award.CoinsEarned} COINS", 10, Gold));
+            
         }
         else { body.Add(Text("Choose a play-cash wager. Your first result will appear here.", 16, Muted)); }
         bool locked = session.IsRoundActive || session.IsDiceTableActive;
@@ -64,11 +75,12 @@ public sealed class SlotMachinePage : ContentPage
             picker.SelectedIndex = bets.ToList().IndexOf(wager);
             picker.IsEnabled = !busy && !locked;
             picker.SelectedIndexChanged += (_, _) => { if (picker.SelectedIndex >= 0) { wager = bets[picker.SelectedIndex]; Render(); } };
-            body.Add(picker);
+            dock.Add(picker);
         }
-        var spin = Button(busy ? "SHOWING SAVED RESULT…" : free > 0 ? "PLAY FREE SPIN" : $"SPIN · {Cash(wager)}", "SpinSlot", async (_, _) => await Spin(), true);
+        var spin = Button(busy ? "SPINNING…" : free > 0 ? "PLAY FREE SPIN" : $"SPIN · {Cash(wager)}", "SpinSlot", async (_, _) => await Spin(), true);
         spin.IsEnabled = !busy && !locked && (free > 0 || session.Bankroll >= wager);
-        body.Add(spin);
+        dock.Add(spin);
+        if(compact&&dock.Children.Count==2){var first=(View)dock.Children[0];dock.Children.Clear();dock.Add(Columns(first,spin));}
         if (!busy && !locked && free == 0 && session.Bankroll < wager)
         { body.Add(Text("Choose an affordable wager. If play cash is below $1 and no bonus is active, you can refill it.", 15, Muted)); }
         if (!busy && !locked && session.Bankroll < 1 && !session.HasSlotBonus)
@@ -81,36 +93,41 @@ public sealed class SlotMachinePage : ContentPage
             }));
         }
         body.Add(Button("PAYTABLE & FEATURES", "SlotPaytable", (_, _) => { if (!busy) { paytable = true; Render(); } }));
-        body.Add(Text("Each tap plays one spin. Leaving saves bonus progress. Reopening a result does not charge, draw or pay again.", 14, Muted));
-        body.Add(Button("BACK TO FLOOR", "SlotBack", async (_, _) => await Navigation.PopAsync()));
+        
+        body.Add(Button("LEAVE MACHINE", "SlotBack", async (_, _) => await Navigation.PopAsync()));
     }
 
     private void AddGrid(MobileSlotReceipt? result)
     {
         int columns = game == MobileSlotGame.NeonVault ? 5 : 3;
-        int rows = game == MobileSlotGame.Reels ? 1 : game == MobileSlotGame.NeonVault ? 4 : 3;
-        var grid = new Grid { ColumnSpacing = 5, RowSpacing = 5 };
-        for (int i = 0; i < columns; i++) { grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star }); }
-        for (int i = 0; i < rows; i++) { grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); }
-        for (int i = 0; i < columns * rows; i++)
+        int rows = game == MobileSlotGame.Reels ? 3 : game == MobileSlotGame.NeonVault ? 4 : 3;
+        double cellHeight = compact ? (game == MobileSlotGame.NeonVault ? 28 : 36) : game == MobileSlotGame.NeonVault ? 62 : game == MobileSlotGame.NineLives ? 78 : 58;
+        var grid = new Grid { ColumnSpacing = game == MobileSlotGame.Reels ? 5 : 2, IsClippedToBounds = true };
+        for (int reel = 0; reel < columns; reel++)
         {
-            int? symbol = result?.Symbols[i];
-            string name = symbol is null ? "—" : SymbolName(game, symbol.Value);
-            var content = new VerticalStackLayout { Spacing = 2, Padding = 3 };
-            if (symbol.HasValue)
-            { content.Add(new GraphicsView { Drawable = new SlotSymbolArt(game, symbol.Value), HeightRequest = rows == 1 ? 75 : 37, HorizontalOptions = LayoutOptions.Fill }); }
-            else { content.Add(new BoxView { HeightRequest = rows == 1 ? 75 : 37, Color = Panel }); }
-            Label label = Text(name, game == MobileSlotGame.NeonVault ? 10 : 13, CasinoFloorPage.Accent(game));
-            label.HorizontalTextAlignment = TextAlignment.Center;
-            content.Add(label);
-            bool highlight = result?.HighlightCells.Contains(i) == true;
-            var cell = new Border { Content = content, MinimumHeightRequest = rows == 1 ? 124 : 65,
-                BackgroundColor = Panel, Stroke = new SolidColorBrush(highlight ? Gold : Color.FromArgb("#315244")),
-                StrokeThickness = highlight ? 2 : 1, StrokeShape = new RoundRectangle { CornerRadius = 9 }, AutomationId = "SlotCell" + i };
-            SemanticProperties.SetDescription(cell, $"Row {i / columns + 1}, reel {i % columns + 1}: {name}");
-            cells.Add(cell); grid.Add(cell, i % columns, i / columns);
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            int[] symbols = game == MobileSlotGame.Reels
+                ? new[] { (result?.Symbols[reel] ?? reel) + 1, result?.Symbols[reel] ?? 4, (result?.Symbols[reel] ?? reel) + 2 }.Select(i => i % 5).ToArray()
+                : Enumerable.Range(0,rows).Select(row => result?.Symbols[row * columns + reel] ?? (row + reel) % 8).ToArray();
+            var column = new SlotReelColumn(game, symbols, cellHeight); reels.Add(column); grid.Add(column,reel);
         }
-        body.Add(grid);
+        var cabinet = new Grid { IsClippedToBounds = true }; cabinet.Add(grid);
+        if (game == MobileSlotGame.Reels)
+        {
+            cabinet.Add(new BoxView { HeightRequest = 1.5, Color = Gold, VerticalOptions = LayoutOptions.Center, InputTransparent = true });
+            var line = Text("▸",20,Gold); line.VerticalOptions = LayoutOptions.Center; line.InputTransparent = true; cabinet.Add(line);
+        }
+        var bezel = new Border { Content = cabinet, Padding = game == MobileSlotGame.Reels ? 9 : 5,
+            BackgroundColor = Color.FromArgb("#05060B"), Stroke = Gradient("#6D4A28", "#F1D393"), StrokeThickness = 2,
+            StrokeShape = new RoundRectangle { CornerRadius = 12 }, Shadow = new Shadow { Brush = CasinoFloorPage.Accent(game), Opacity = .2f, Radius = 20 } };
+        var shell = new VerticalStackLayout { Padding = 12, Spacing = 10 };
+        var marquee = Text(game == MobileSlotGame.Reels ? "✦  M I D N I G H T  ✦" : game == MobileSlotGame.NeonVault ? "N E O N   V A U L T" : "N I N E   L I V E S", 17, CasinoFloorPage.Accent(game));
+        marquee.HorizontalTextAlignment = TextAlignment.Center; shell.Add(marquee); shell.Add(bezel);
+        var footer = Text(game == MobileSlotGame.Reels ? "THREE REELS  ·  ONE PAYLINE" : game == MobileSlotGame.NeonVault ? "1,024 WAYS  ·  VAULT CLASS" : "THREE REELS  ·  FIVE LUCKY LINES", 8,Gold);
+        footer.HorizontalTextAlignment = TextAlignment.Center; shell.Add(footer);
+        body.Add(new Border { Content = shell, Background = Gradient(game == MobileSlotGame.NeonVault ? "#18203D" : "#302238", "#100D19"),
+            Stroke = new SolidColorBrush(CasinoFloorPage.Accent(game).WithAlpha(.6f)), StrokeShape = new RoundRectangle { CornerRadius = 22 }, StrokeThickness = 1,
+            Shadow = new Shadow { Brush = Colors.Black, Radius = 16, Opacity = .45f, Offset = new Point(0,6) } });
     }
 
     private async Task Spin()
@@ -121,22 +138,17 @@ public sealed class SlotMachinePage : ContentPage
         {
             session.SpinSlot(game, wager);
             wager = session.SlotBet(game); message = null; Render();
-            if (!session.Settings.ReduceSlotAnimations)
+            if (!session.Settings.ReduceSlotAnimations && !VisualMotion.Reduced())
             {
                 CancellationToken token = animation.Token;
-                int columns = game == MobileSlotGame.NeonVault ? 5 : 3;
-                View[] frames = cells.ToArray();
-                foreach (View cell in frames) { cell.Opacity = .25; }
-                try
+                var moving = reels.ToArray();
+                await Task.WhenAll(moving.Select((reel,index) => reel.Spin(index,token)));
+                MobileSlotReceipt? result = session.SlotHistory.FirstOrDefault(spin => spin.Game == game);
+                if (result is { Payout: > 0 })
                 {
-                    for (int reel = 0; reel < columns; reel++)
-                    {
-                        token.ThrowIfCancellationRequested();
-                        await Task.WhenAll(frames.Where((_, index) => index % columns == reel)
-                            .Select(cell => cell.FadeToAsync(1, 140, Easing.CubicOut)));
-                    }
+                    VisualMotion.Celebrate(root, CasinoFloorPage.Accent(game));
+                    await Task.WhenAll(moving.Select(reel => reel.WinPulse(Gold)));
                 }
-                finally { foreach (View cell in frames) { cell.Opacity = 1; } }
             }
         }
         catch (OperationCanceledException) { }

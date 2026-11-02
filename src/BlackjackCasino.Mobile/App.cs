@@ -15,6 +15,7 @@ public sealed class App : Application
             BlackjackSession session = saved is null ? new BlackjackSession(persist: store.Save)
                 : BlackjackSession.Restore(saved, store.Save);
             if (saved is null) { store.Save(session.Export()); }
+            VisualMotion.Reduced = () => session.Settings.ReduceInterfaceMotion;
             root = new LobbyPage(session, store.RecoveryNotice);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or NotSupportedException)
@@ -30,6 +31,6 @@ public sealed class App : Application
                 },
             };
         }
-        return new Window(new NavigationPage(root) { BarBackgroundColor = Ink, BarTextColor = Gold });
+        return new Window(new NavigationPage(root) { BarBackgroundColor = Color.FromArgb("#0A1513"), BarTextColor = Gold });
     }
 }

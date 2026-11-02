@@ -5,7 +5,7 @@ using static BlackjackCasino.Mobile.CasinoStyle;
 
 namespace BlackjackCasino.Mobile;
 
-public sealed class PackRevealPage : ContentPage
+public sealed class PackRevealPage : CasinoPage
 {
     private readonly BlackjackSession session;
     private readonly VerticalStackLayout body = new()
@@ -13,6 +13,8 @@ public sealed class PackRevealPage : ContentPage
         Padding = new Thickness(22, 24), Spacing = 18, MaximumWidthRequest = 460,
         HorizontalOptions = LayoutOptions.Center,
     };
+    private readonly VerticalStackLayout dock = new() { Padding = new Thickness(18,10), Spacing = 7 };
+    private readonly Grid root = new() { RowDefinitions = { new RowDefinition { Height=GridLength.Star }, new RowDefinition { Height=GridLength.Auto } } };
     private int selected;
     private bool busy;
     private string? message;
@@ -23,7 +25,7 @@ public sealed class PackRevealPage : ContentPage
         selected = Math.Max(0, session.RevealedCards - 1);
         Title = "Pack opening";
         BackgroundColor = Ink;
-        Content = new ScrollView { Content = body };
+        root.Add(new ScrollView { Content=body }); dock.BackgroundColor=Color.FromArgb("#0D211A"); root.Add(dock,0,1); Content=root;
         Render();
     }
 
@@ -31,7 +33,7 @@ public sealed class PackRevealPage : ContentPage
 
     private View? Render()
     {
-        body.Children.Clear();
+        body.Children.Clear(); dock.Children.Clear();
         if (message is not null) { body.Add(Box(Text(message, 15, Gold))); }
         CollectionOpening? opening = session.Profile.Collection.PendingOpening;
         if (opening is null)
@@ -69,29 +71,19 @@ public sealed class PackRevealPage : ContentPage
         }
         else
         {
-            body.Add(new Border
-            {
-                HeightRequest = 360, Padding = 28, BackgroundColor = Panel,
-                Stroke = new SolidColorBrush(accent), StrokeThickness = 2,
-                StrokeShape = new RoundRectangle { CornerRadius = 24 },
-                Content = new VerticalStackLayout
-                {
-                    Spacing = 24, VerticalOptions = LayoutOptions.Center, HorizontalOptions = LayoutOptions.Center,
-                    Children = { Text("♠", 100, accent), Text("FIVE CARDS.\nYOUR NEXT DISCOVERY.", 24, accent) },
-                },
-            });
+            body.Add(PackPresentation.Cover(opening.PackRarity,true));
         }
         if (session.RevealedCards < CollectionCatalog.CardsPerPack)
         {
-            body.Add(Button($"REVEAL CARD {session.RevealedCards + 1} / 5", "RevealNextCard", async (_, _) => await Reveal(false), true));
-            body.Add(Button("REVEAL ALL", "RevealAllCards", async (_, _) => await Reveal(true)));
+            dock.Add(Button($"REVEAL CARD {session.RevealedCards + 1} / 5", "RevealNextCard", async (_, _) => await Reveal(false), true));
+            dock.Add(Button("REVEAL ALL", "RevealAllCards", async (_, _) => await Reveal(true)));
         }
         else
         {
             int newCards = opening.Cards.Count(card => card.IsNew);
             body.Add(Box(Text($"PACK COMPLETE\n{newCards} new · {5 - newCards} duplicates\n+{opening.PointsEarned} duplicate points · {opening.PacksEarned} bonus pack(s)", 19, Gold)));
             body.Add(Text("Tap the numbered slots to revisit any of your five cards.", 15, Muted));
-            body.Add(Button("COLLECT & FINISH", "CompletePack", async (_, _) =>
+            dock.Add(Button("COLLECT & FINISH", "CompletePack", async (_, _) =>
             {
                 if (busy) { return; }
                 busy = true;
@@ -102,7 +94,7 @@ public sealed class PackRevealPage : ContentPage
             }, true));
         }
         body.Add(Text("You can leave and continue this pack later. Opening another pack waits until this reveal is finished.", 14, Muted));
-        body.Add(Button("RETURN · OPENING SAVED", "LeavePackReveal", async (_, _) => await Navigation.PopAsync()));
+        dock.Add(Button("RETURN · OPENING SAVED", "LeavePackReveal", async (_, _) => await Navigation.PopAsync()));
         return cardView;
     }
 
@@ -116,15 +108,16 @@ public sealed class PackRevealPage : ContentPage
             selected = session.RevealedCards - 1;
             message = null;
             View? target = Render();
-            if (target is not null && !session.Settings.ReducePackAnimations)
+            if (target is not null && !session.Settings.ReducePackAnimations && !VisualMotion.Reduced())
             {
                 target.Opacity = 0;
-                target.Scale = .94;
+                target.Scale = .91; target.RotationY = -85;
                 try
                 {
-                    await Task.WhenAll(target.FadeToAsync(1, 260, Easing.CubicOut), target.ScaleToAsync(1, 320, Easing.CubicOut));
+                    await Task.WhenAll(target.FadeToAsync(1, 280, Easing.CubicOut), target.ScaleToAsync(1, 480, Easing.CubicOut), target.RotateYToAsync(0,480,Easing.CubicOut));
                 }
-                finally { target.Opacity = 1; target.Scale = 1; }
+                finally { target.Opacity = 1; target.Scale = 1; target.RotationY=0; }
+                VisualMotion.Celebrate(root,CollectionCardView.RarityColor(session.Profile.Collection.PendingOpening!.PackRarity));
             }
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)

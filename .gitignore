@@ -7,25 +7,18 @@ TestResults/
 *.suo
 *.userosscache
 *.sln.docstates
-
 *_wpftmp.csproj
-
-# IDE
 .vs/
 .idea/
 .vscode/
-
-# OS
 .DS_Store
 Thumbs.db
-
-# Local update/package output
 *.zip
 *.sha256
 update-manifest.local.json
-
-# Reproducible Android album assets
 src/BlackjackCasino.Mobile/Resources/Images/Collection/
-
+src/BlackjackCasino.Mobile/Resources/Images/Club/
+visual-proof/
+qa/
 __pycache__/
 *.pyc

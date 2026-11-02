@@ -7,8 +7,8 @@
     <SingleProject>true</SingleProject>
     <ApplicationTitle>Blackjack Empire</ApplicationTitle>
     <ApplicationId>com.tekatz.blackjackcasino.mobile</ApplicationId>
-    <ApplicationDisplayVersion>0.6.0</ApplicationDisplayVersion>
-    <ApplicationVersion>6</ApplicationVersion>
+    <ApplicationDisplayVersion>0.7.0</ApplicationDisplayVersion>
+    <ApplicationVersion>7</ApplicationVersion>
     <SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
     <AndroidPackageFormats>apk</AndroidPackageFormats>
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
@@ -17,10 +17,13 @@
     <PackageReference Include="Microsoft.Maui.Controls" />
     <ProjectReference Include="../BlackjackCasino.Core/BlackjackCasino.Core.csproj" />
     <MauiImage Include="Resources/Images/Collection/*.jpg" Resize="False" />
+    <MauiImage Include="Resources/Images/Club/*.jpg;Resources/Images/Club/*.png;Resources/Images/Club/*.svg" Resize="False" />
     <MauiIcon Include="Resources/AppIcon/appicon.svg" Color="#10251F" />
     <MauiSplashScreen Include="Resources/Splash/splash.svg" Color="#10251F" BaseSize="128,128" />
   </ItemGroup>
   <Target Name="CheckAlbumArtworkPrepared" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(MSBuildProjectDirectory)/Resources/Images/Club/.complete')"
+           Text="Prepare original desktop assets first: python tools/mobile/prepare_presentation_art.py" />
     <Error Condition="!Exists('$(MSBuildProjectDirectory)/Resources/Images/Collection/.complete')"
            Text="Prepare Android album images first: python tools/mobile/prepare_collection_art.py (requires Pillow)." />
   </Target>

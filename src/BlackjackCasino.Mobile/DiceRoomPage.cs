@@ -5,7 +5,7 @@ using static BlackjackCasino.Mobile.CasinoStyle;
 
 namespace BlackjackCasino.Mobile;
 
-public sealed class DiceRoomPage : ContentPage
+public sealed class DiceRoomPage : CasinoPage
 {
     private readonly BlackjackSession session;
     private readonly VerticalStackLayout body = new()
@@ -30,7 +30,7 @@ public sealed class DiceRoomPage : ContentPage
     private void Render()
     {
         body.Children.Clear();
-        body.Add(Text("MIDNIGHT DICE", 30, Gold));
+        body.Add(Header("THE DICE LOUNGE", "A little luck. A little strategy.", null, "club_nav_challenges.png"));
         body.Add(Text("Five dice. Thirteen boxes. Your next move.", 18));
         body.Add(Text($"{Cash(session.Bankroll)} play cash · {session.Profile.Coins:N0} coins", 17, Muted));
         if (message is not null) { body.Add(Box(Text(message, 16, Gold))); }

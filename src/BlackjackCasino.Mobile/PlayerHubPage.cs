@@ -8,7 +8,7 @@ namespace BlackjackCasino.Mobile;
 
 public enum HubSection { Profile, Challenges, Season, Shop, Settings }
 
-public sealed class PlayerHubPage : ContentPage
+public sealed class PlayerHubPage : CasinoPage
 {
     private readonly BlackjackSession session;
     private readonly HubSection section;
@@ -20,13 +20,14 @@ public sealed class PlayerHubPage : ContentPage
     private string? message;
     private int page;
     private string query = "";
+    private CosmeticKind cosmeticKind = CosmeticKind.Title;
 
     public PlayerHubPage(BlackjackSession session, HubSection section)
     {
         this.session = session;
         this.section = section;
         Title = section switch { HubSection.Profile => "Your profile", HubSection.Season => "Season pass",
-            HubSection.Shop => "Title shop", HubSection.Settings => "Settings", _ => "Challenges" };
+            HubSection.Shop => "Cosmetic Shop", HubSection.Settings => "Settings", _ => "Challenges" };
         BackgroundColor = Ink;
         Content = new ScrollView { Content = body };
         Render();
@@ -35,7 +36,8 @@ public sealed class PlayerHubPage : ContentPage
     private void Render()
     {
         body.Children.Clear();
-        body.Add(Text(Title ?? "Player hub", 30, Gold));
+        string icon = section switch { HubSection.Profile => "statistics", HubSection.Challenges => "challenges", HubSection.Season => "season", _ => "shop" };
+        body.Add(Header(section == HubSection.Profile ? "YOUR MIDNIGHT CLUB" : "MAKE THE NIGHT YOURS", Title ?? "Player hub", null, "club_nav_"+icon+".png"));
         body.Add(Text($"Level {session.Profile.Level} · {session.Profile.Coins:N0} coins", 17, Muted));
         if (message is not null) { body.Add(Box(Text(message, 16, Gold))); }
         switch (section)
@@ -54,7 +56,9 @@ public sealed class PlayerHubPage : ContentPage
     private void Profile()
     {
         CosmeticDefinition title = CosmeticCatalog.Get(session.Profile.EquippedTitleId);
-        body.Add(Text(session.Profile.DisplayName, 26));
+        var identity = new Grid { ColumnSpacing=14, ColumnDefinitions={new ColumnDefinition {Width=76},new ColumnDefinition {Width=GridLength.Star}} };
+        identity.Add(new Image {Source=ClubAssets.Portrait(session.Profile.EquippedPortraitId),Aspect=Aspect.AspectFit,HeightRequest=76});
+        var name=Text(session.Profile.DisplayName,27);name.VerticalOptions=LayoutOptions.Center;identity.Add(name,1);body.Add(identity);
         body.Add(Text(title.Name, 20, LobbyPage.TitleColor(title.VisualVariant)));
         body.Add(LobbyPage.LevelProgress(session));
         StatisticsSnapshot stats = session.Profile.LifetimeStatistics;
@@ -124,7 +128,8 @@ public sealed class PlayerHubPage : ContentPage
             var row = new VerticalStackLayout { Spacing = 10 };
             row.Add(Text(challenge.Name, 20, Gold));
             row.Add(Text(challenge.Description, 15, Muted));
-            row.Add(Text($"{progress:N0} / {challenge.Goal:N0} · {challenge.CoinReward:N0} coins + pack", 15));
+            row.Add(new ProgressBar {Progress=(double)(progress/challenge.Goal),ProgressColor=progress>=challenge.Goal?Win:Gold,BackgroundColor=Ink,HeightRequest=4});
+            row.Add(Columns(Pill($"{progress:N0} / {challenge.Goal:N0}",Muted),Pill($"{challenge.CoinReward:N0} COINS + PACK",Gold)));
             var claim = Button(claimed ? "CLAIMED" : "CLAIM REWARD", "Claim-" + challenge.Id,
                 (_, _) => Run(() => session.ClaimChallenge(challenge.Id), "Reward saved to your profile."));
             claim.IsEnabled = !claimed && progress >= challenge.Goal;
@@ -162,31 +167,28 @@ public sealed class PlayerHubPage : ContentPage
 
     private void Shop()
     {
-        Search();
-        body.Add(Text("Permanent cosmetic titles. Coins are earned from levels, season tiers and challenges.", 15, Muted));
-        body.Add(Button("DICE SETS · VISIT MIDNIGHT DICE", "ShopDice", async (_, _) => await Navigation.PushAsync(new DiceRoomPage(session))));
-        CosmeticDefinition[] titles = CosmeticCatalog.All.Where(item => item.Kind == CosmeticKind.Title
-            && (item.ShopAvailable || session.Profile.OwnedCosmeticIds.Contains(item.Id)))
-            .Where(item => item.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(item => session.Profile.OwnedCosmeticIds.Contains(item.Id) ? 0 : 1).ThenBy(item => item.Price).ToArray();
-        foreach (CosmeticDefinition title in titles.Skip(page * 10).Take(10))
+        var picker=new Picker {Title="Your style",TextColor=Cream,BackgroundColor=Panel,AutomationId="CosmeticKind"};
+        CosmeticKind[] kinds=[CosmeticKind.Title,CosmeticKind.CardSet,CosmeticKind.DiceSet,CosmeticKind.Portrait,CosmeticKind.Frame];
+        foreach(var kind in kinds){picker.Items.Add(kind switch {CosmeticKind.CardSet=>"Playing cards",CosmeticKind.DiceSet=>"Dice sets",_=>kind+"s"});}
+        picker.SelectedIndex=Array.IndexOf(kinds,cosmeticKind);picker.SelectedIndexChanged+=(_,_)=>{if(picker.SelectedIndex>=0){cosmeticKind=kinds[picker.SelectedIndex];page=0;Render();}};body.Add(picker); Search();
+        var items=CosmeticCatalog.All.Where(item=>item.Kind==cosmeticKind&&(item.Kind!=CosmeticKind.Portrait||ClubAssets.HasPortrait(item.Id))&&(item.ShopAvailable||session.Profile.OwnedCosmeticIds.Contains(item.Id)))
+            .Where(item=>item.Name.Contains(query,StringComparison.OrdinalIgnoreCase)).OrderBy(item=>session.Profile.OwnedCosmeticIds.Contains(item.Id)?0:1).ThenBy(item=>item.Price).ToArray();
+        string equipped=cosmeticKind switch {CosmeticKind.CardSet=>session.Profile.EquippedCardSetId,CosmeticKind.DiceSet=>session.Profile.EquippedDiceSetId,CosmeticKind.Portrait=>session.Profile.EquippedPortraitId,CosmeticKind.Frame=>session.Profile.EquippedFrameId,_=>session.Profile.EquippedTitleId};
+        foreach(var item in items.Skip(page*10).Take(10))
         {
-            bool owned = session.Profile.OwnedCosmeticIds.Contains(title.Id);
-            bool equipped = session.Profile.EquippedTitleId == title.Id;
-            var row = new VerticalStackLayout { Spacing = 10 };
-            row.Add(Text(title.Name, 22, LobbyPage.TitleColor(title.VisualVariant)));
-            row.Add(Text(title.Description, 15, Muted));
-            var button = Button(equipped ? "EQUIPPED" : owned ? "EQUIP" : $"BUY · {title.Price:N0} COINS", "Title-" + title.Id,
-                (_, _) => Run(() =>
-                {
-                    if (!owned) { session.PurchaseTitle(title.Id); }
-                    else { session.EquipTitle(title.Id); }
-                }, "Title saved and equipped."));
-            button.IsEnabled = !equipped && (owned || session.Profile.Coins >= title.Price && session.Profile.Prestige >= title.RequiredPrestige);
-            row.Add(button);
-            body.Add(Box(row));
+            bool owned=session.Profile.OwnedCosmeticIds.Contains(item.Id);bool active=equipped==item.Id;
+            var row=new VerticalStackLayout {Spacing=12};
+            if(item.Kind==CosmeticKind.CardSet){row.Add(PlayingCardView.Preview(item.Id));}
+            else if(item.Kind==CosmeticKind.Portrait){row.Add(new Image {Source=ClubAssets.Portrait(item.Id),HeightRequest=100,Aspect=Aspect.AspectFit});}
+            else if(item.Kind==CosmeticKind.DiceSet)
+            {var sample=new HorizontalStackLayout {Spacing=8,HorizontalOptions=LayoutOptions.Center};foreach(int face in new[]{2,5,6}){var die=DiceFace.Create(face,item.VisualVariant);die.WidthRequest=58;sample.Add(die);}row.Add(sample);}
+            else if(item.Kind==CosmeticKind.Frame)
+            {row.Add(new Border {Content=new Image {Source=ClubAssets.Portrait(session.Profile.EquippedPortraitId),HeightRequest=70},Padding=5,WidthRequest=82,HorizontalOptions=LayoutOptions.Center,Stroke=new SolidColorBrush(ClubAssets.FrameAccent(item.Id)),StrokeThickness=2,StrokeShape=new Microsoft.Maui.Controls.Shapes.RoundRectangle {CornerRadius=12},Shadow=new Shadow {Brush=Gold,Radius=15,Opacity=.22f}});}
+            row.Add(Text(item.Name,24,LobbyPage.TitleColor(item.VisualVariant)));row.Add(Text(item.Description,13,Muted));
+            var action=Button(active?"EQUIPPED":owned?"EQUIP":$"BUY & EQUIP · {item.Price:N0} COINS","Cosmetic-"+item.Id,(_,_)=>Run(()=>session.UseAppearance(item.Id,!owned),"Your style is saved."),!owned);
+            action.IsEnabled=!active&&(owned||session.Profile.Coins>=item.Price&&session.Profile.Prestige>=item.RequiredPrestige);row.Add(action);body.Add(Box(row));
         }
-        Pager(titles.Length);
+        Pager(items.Length);
     }
 
     private void Settings()
@@ -196,6 +198,7 @@ public sealed class PlayerHubPage : ContentPage
         body.Add(Text("PLAYER NAME", 14, Gold));
         body.Add(name);
         body.Add(Button("SAVE NAME", "SaveName", (_, _) => Run(() => session.Rename(name.Text ?? ""), "Name saved.")));
+        AddSwitch("Reduce interface motion", session.Settings.ReduceInterfaceMotion, session.SetReducedInterfaceMotion, "ReduceInterfaceMotion");
         AddSwitch("Larger playing cards", session.Settings.LargeCards,
             value => session.UpdateSettings(value, session.Settings.ConfirmSurrender), "LargeCards");
         AddSwitch("Confirm before surrender", session.Settings.ConfirmSurrender,
@@ -206,8 +209,8 @@ public sealed class PlayerHubPage : ContentPage
             session.SetReducedDiceAnimations, "ReduceDiceAnimations");
         AddSwitch("Reduce slot animations", session.Settings.ReduceSlotAnimations,
             session.SetReducedSlotAnimations, "ReduceSlotAnimations");
-        body.Add(Text("Every accepted action saves your cash, profile, open Blackjack hand and Dice games on this device. A previous-save backup is kept for recovery. Uninstalling removes local data.", 15, Muted));
-        body.Add(Text("Mobile preview · 0.6.0", 14, Gold));
+        body.Add(Text("Your progress saves on this device. Keep the app installed when updating to retain your profile.", 15, Muted));
+        body.Add(Text("Midnight Club · 0.7.0", 14, Gold));
     }
 
     private void AddSwitch(string caption, bool enabled, Action<bool> changed, string id)

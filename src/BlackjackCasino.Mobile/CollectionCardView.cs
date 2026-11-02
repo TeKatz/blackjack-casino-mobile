@@ -20,14 +20,14 @@ internal static class CollectionCardView
         if (owned)
         {
             content.Add(new Image { Source = Asset(card.Id), Aspect = Aspect.AspectFit,
-                HeightRequest = large ? 400 : 196, AutomationId = "Artwork-" + card.Id });
+                HeightRequest = large ? 320 : 180, AutomationId = "Artwork-" + card.Id });
         }
         else
         {
             var back = new VerticalStackLayout { Spacing = 18, VerticalOptions = LayoutOptions.Center,
                 HorizontalOptions = LayoutOptions.Center, Children =
                 { Text(CollectionCatalog.Theme(card).Symbol, large ? 70 : 48, accent), Text("NOT COLLECTED", 11, Muted) } };
-            content.Add(new Grid { HeightRequest = large ? 400 : 196, Children = { back } });
+            content.Add(new Grid { HeightRequest = large ? 320 : 180, Children = { back } });
         }
         content.Add(new Label { Text = card.Name, FontSize = large ? 24 : 15, TextColor = Colors.White,
             MaxLines = 2, LineBreakMode = LineBreakMode.TailTruncation, FontAttributes = FontAttributes.Bold });
@@ -43,17 +43,30 @@ internal static class CollectionCardView
         }
         var frame = new Border
         {
-            Padding = large ? 14 : 9, BackgroundColor = Panel, Stroke = stroke,
+            Padding = large ? 14 : 8, Background = Gradient("#1B3029", "#0C1917"), Stroke = stroke,
+            Shadow = new Shadow { Brush = accent, Radius = card.Rarity >= CollectionRarity.Epic ? 16 : 5, Opacity = card.Rarity >= CollectionRarity.Epic ? .22f : .08f },
             StrokeThickness = card.Rarity >= CollectionRarity.Epic ? 2.5 : 1.5,
             StrokeShape = new RoundRectangle { CornerRadius = large ? 20 : 14 }, Content = content,
             AutomationId = "AlbumCard-" + card.Id,
         };
+        if (owned && card.Rarity >= CollectionRarity.Epic)
+        {
+            var glass = new Grid { IsClippedToBounds = true }; glass.Add(content);
+            var sheen = new BoxView { Color = Colors.White.WithAlpha(.14f), WidthRequest = 22, Rotation = 22, InputTransparent = true, TranslationX = -400 };
+            glass.Add(sheen); frame.Content = glass; bool played = false;
+            frame.Loaded += async (_,_) =>
+            {
+                if (played || VisualMotion.Reduced()) { return; } played=true;
+                try { await sheen.TranslateToAsync(400,0,1250,Easing.CubicInOut); }
+                finally { glass.Remove(sheen); }
+            };
+        }
         SemanticProperties.SetDescription(frame, $"{card.Name}, {card.Rarity}, {(owned ? "collected" : "not collected")}");
         return frame;
     }
 }
 
-internal sealed class CollectionCardPage : ContentPage
+internal sealed class CollectionCardPage : CasinoPage
 {
     private readonly Game.BlackjackSession session;
     private readonly CollectionTheme theme;

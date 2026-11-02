@@ -6,7 +6,7 @@ namespace BlackjackCasino.Mobile;
 
 public enum AlbumSection { Themes, Packs }
 
-public sealed class AlbumPage : ContentPage
+public sealed class AlbumPage : CasinoPage
 {
     private readonly BlackjackSession session;
     private readonly VerticalStackLayout body = new()
@@ -38,7 +38,7 @@ public sealed class AlbumPage : ContentPage
     {
         body.Children.Clear();
         CollectionState collection = session.Profile.Collection;
-        body.Add(Text("COLLECTOR'S ALBUM", 28, Gold));
+        body.Add(Header("YOUR COLLECTION", "Collector's Album", "Every card has a place in your story.", "club_nav_album.png"));
         body.Add(Text($"{collection.OwnedCardIds.Count} / {CollectionCatalog.Cards.Count} cards · {collection.Packs.Values.Sum()} packs · {session.Profile.Coins:N0} coins", 17, Muted));
         var progress = new ProgressBar { Progress = (double)collection.OwnedCardIds.Count / CollectionCatalog.Cards.Count,
             ProgressColor = Gold, BackgroundColor = Panel };
@@ -63,23 +63,25 @@ public sealed class AlbumPage : ContentPage
     private void Themes()
     {
         CollectionTheme[] visible = CollectionCatalog.Themes.Skip(page * 4).Take(4).ToArray();
-        foreach (CollectionTheme item in visible)
+        var grid = new Grid { ColumnSpacing = 12, RowSpacing = 14, ColumnDefinitions = { new ColumnDefinition { Width=GridLength.Star },new ColumnDefinition { Width=GridLength.Star } } };
+        for (int i=0;i<2;i++) { grid.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto }); }
+        for (int i=0;i<visible.Length;i++)
         {
-            int owned = item.Cards.Count(card => session.Profile.Collection.OwnedCardIds.Contains(card.Id));
-            var row = new VerticalStackLayout { Spacing = 10 };
-            Color accent = Color.FromArgb(item.Accent);
-            row.Add(Text($"{item.Symbol}  {item.Name}", 24, accent));
-            row.Add(Text($"{owned} / {item.Cards.Count} collected{(item.UltraRare ? " · ULTRA RARE THEME" : "")}", 15, Muted));
-            row.Add(new ProgressBar { Progress = (double)owned / item.Cards.Count, ProgressColor = accent, BackgroundColor = Ink });
-            bool claimed = session.Profile.Collection.ClaimedThemeRewardIds.Contains(item.Id);
-            if (owned == item.Cards.Count) { row.Add(Text(claimed ? "Completion reward claimed" : "Completion reward available", 15, Win)); }
-            row.Add(Button("EXPLORE THEME", "Theme-" + item.Id, (_, _) => { theme = item; Render(); }));
-            body.Add(Box(row));
+            CollectionTheme item=visible[i]; Color accent=Color.FromArgb(item.Accent);
+            int owned=item.Cards.Count(card=>session.Profile.Collection.OwnedCardIds.Contains(card.Id));
+            var row=new VerticalStackLayout { Spacing=8 };
+            var cover=new Grid { HeightRequest=136, IsClippedToBounds=true };
+            cover.Add(new Image { Source=CollectionCardView.Asset(item.Cards[0].Id), Aspect=Aspect.AspectFill, Opacity=.85 });
+            var symbol=Text(item.Symbol,38,accent); symbol.HorizontalOptions=LayoutOptions.End; symbol.VerticalOptions=LayoutOptions.End; symbol.Margin=10; cover.Add(symbol); row.Add(cover);
+            row.Add(Text(item.Name,18)); row.Add(Text($"{owned}/{item.Cards.Count} COLLECTED"+(item.UltraRare?" · ULTRA RARE":""),8,accent));
+            row.Add(new ProgressBar { Progress=(double)owned/item.Cards.Count, ProgressColor=accent,BackgroundColor=Ink,HeightRequest=3 });
+            var tile=Box(row);tile.Padding=9;tile.AutomationId="Theme-"+item.Id;
+            var tap=new TapGestureRecognizer();tap.Tapped+=(_,_)=>{ theme=item;Render(); };tile.GestureRecognizers.Add(tap);grid.Add(tile,i%2,i/2);
         }
-        int pages = (CollectionCatalog.Themes.Count + 3) / 4;
-        body.Add(Text($"Themes · Page {page + 1} of {pages}", 14, Muted));
-        if (page > 0) { body.Add(Button("PREVIOUS THEMES", "PreviousThemes", (_, _) => { page--; Render(); })); }
-        if (page + 1 < pages) { body.Add(Button("NEXT THEMES", "NextThemes", (_, _) => { page++; Render(); })); }
+        body.Add(grid);
+        body.Add(Text($"PAGE {page+1} / {(CollectionCatalog.Themes.Count+3)/4}",10,Muted));
+        if(page>0){body.Add(Button("PREVIOUS THEMES","PreviousThemes",(_,_)=>{page--;Render();}));}
+        if((page+1)*4<CollectionCatalog.Themes.Count){body.Add(Button("NEXT THEMES","NextThemes",(_,_)=>{page++;Render();}));}
     }
 
     private void ThemeCards(CollectionTheme selected)
@@ -120,7 +122,7 @@ public sealed class AlbumPage : ContentPage
         foreach (CollectionPack pack in CollectionCatalog.Packs)
         {
             var row = new VerticalStackLayout { Spacing = 12 };
-            row.Add(Text($"{pack.Rarity.ToString().ToUpperInvariant()} PACK", 23, CollectionCardView.RarityColor(pack.Rarity)));
+            row.Add(PackPresentation.Cover(pack.Rarity));
             row.Add(Text($"Owned · {state.Packs.GetValueOrDefault(pack.Rarity)}   |   Price · {pack.Price:N0} coins", 16));
             row.Add(Text($"One card is at least {pack.GuaranteedRarity}. Four more cards use this pack's normal odds.", 14, Muted));
             var open = Button("OPEN PACK", "OpenPack-" + pack.Rarity, async (_, _) =>

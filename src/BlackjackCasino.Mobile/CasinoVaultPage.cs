@@ -5,11 +5,13 @@ using static BlackjackCasino.Mobile.CasinoStyle;
 
 namespace BlackjackCasino.Mobile;
 
-public sealed class CasinoVaultPage : ContentPage
+public sealed class CasinoVaultPage : CasinoPage
 {
     private readonly BlackjackSession session;
     private readonly VerticalStackLayout body = new()
     { Padding = new Thickness(22, 24), Spacing = 18, MaximumWidthRequest = 620, HorizontalOptions = LayoutOptions.Center };
+    private readonly Grid root = new();
+    private GraphicsView? door;
     private bool confirm;
     private bool busy;
     private string? message;
@@ -19,7 +21,7 @@ public sealed class CasinoVaultPage : ContentPage
         this.session = session;
         Title = "Casino Vault";
         BackgroundColor = Ink;
-        Content = new ScrollView { Content = body };
+        root.Add(new ScrollView { Content=body });Content=root;
     }
     protected override void OnAppearing() { base.OnAppearing(); confirm = false; Render(); }
     private void Render()
@@ -27,7 +29,8 @@ public sealed class CasinoVaultPage : ContentPage
         body.Children.Clear();
         CasinoVaultSnapshot vault = session.Vault;
         Color accent = Color.FromArgb(vault.Tier.Accent);
-        body.Add(Text("CASINO VAULT", 30, accent));
+        body.Add(Header("YOUR CASINO VAULT", "Good things build up.", null, "club_nav_shop.png"));
+        door=new GraphicsView {Drawable=new VaultDoorArt(vault.Progress),HeightRequest=174};body.Add(door);
         body.Add(Text(vault.Tier.Name, 24));
         body.Add(Text($"{Cash(session.Bankroll)} play cash · {session.Profile.Coins:N0} coins", 16, Muted));
         if (message is not null) { body.Add(Box(Text(message, 18, Gold))); }
@@ -42,13 +45,14 @@ public sealed class CasinoVaultPage : ContentPage
         if (confirm && vault.IsFull && !locked)
         {
             body.Add(Text("Open this full Vault and save its cash and card pack now?", 20, Gold));
-            body.Add(Button("CONFIRM · OPEN VAULT", "ConfirmOpenVault", (_, _) =>
+            body.Add(Button("CONFIRM · OPEN VAULT", "ConfirmOpenVault", async (_, _) =>
             {
                 if (busy) { return; }
                 busy = true;
                 try { session.OpenCasinoVault(); confirm = false; message = "Cash and card pack saved."; }
                 catch (Exception exception) when (exception is ArgumentException or InvalidOperationException) { message = exception.Message.Split('\n')[0]; }
                 finally { busy = false; Render(); }
+                if(session.LastVaultOpening is not null && !VisualMotion.Reduced() && door is { } wheel){VisualMotion.Celebrate(root,Gold);await wheel.RotateToAsync(360,700,Easing.CubicOut);wheel.Rotation=0;}
             }, true));
             body.Add(Button("KEEP VAULT CLOSED", "CancelOpenVault", (_, _) => { confirm = false; Render(); }));
         }

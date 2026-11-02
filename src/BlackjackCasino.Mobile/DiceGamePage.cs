@@ -5,13 +5,16 @@ using static BlackjackCasino.Mobile.CasinoStyle;
 
 namespace BlackjackCasino.Mobile;
 
-public sealed class DiceGamePage : ContentPage
+public sealed class DiceGamePage : CasinoPage
 {
     private readonly BlackjackSession session;
     private readonly bool casino;
     private readonly VerticalStackLayout body = new()
-    { Padding = new Thickness(18, 20), Spacing = 16, MaximumWidthRequest = 620, HorizontalOptions = LayoutOptions.Center };
+    { Padding = new Thickness(18, 20), Spacing = 10, MaximumWidthRequest = 760, HorizontalOptions = LayoutOptions.Center };
     private readonly List<View> diceViews = [];
+    private readonly VerticalStackLayout tray = new() { Padding = new Thickness(18,10), Spacing = 10 };
+    private readonly VerticalStackLayout dock = new() { Padding = new Thickness(16,10), Spacing = 7 };
+    private readonly Grid root = new() { RowDefinitions = { new RowDefinition { Height = GridLength.Auto }, new RowDefinition { Height = GridLength.Star }, new RowDefinition { Height = GridLength.Auto } } };
     private bool busy;
     private bool forfeit;
     private KniffelCategory? zeroCategory;
@@ -25,7 +28,8 @@ public sealed class DiceGamePage : ContentPage
         this.casino = casino;
         Title = casino ? "Midnight Dice · Casino" : "Midnight Dice · Casual";
         BackgroundColor = Ink;
-        Content = new ScrollView { Content = body };
+        tray.Background = Gradient("#19372B", "#10251E"); dock.BackgroundColor = Color.FromArgb("#0C1F18");
+        root.Add(tray); root.Add(new ScrollView { Content = body },0,1); root.Add(dock,0,2); Content = root;
         Render();
     }
 
@@ -33,7 +37,7 @@ public sealed class DiceGamePage : ContentPage
 
     private void Render()
     {
-        body.Children.Clear();
+        body.Children.Clear(); tray.Children.Clear(); dock.Children.Clear();
         diceViews.Clear();
         KniffelTableState? table = casino ? session.DiceTable : null;
         KniffelState? saved = casino ? table?.Player : session.CasualDice;
@@ -45,17 +49,9 @@ public sealed class DiceGamePage : ContentPage
         }
         KniffelGame game = KniffelGame.Restore(saved);
         bool complete = casino ? table!.Settled : game.IsComplete;
-        body.Add(Text(casino ? "THE CASINO TABLE" : "YOUR CASUAL TABLE", 14, Gold));
-        body.Add(Text($"{session.Profile.DisplayName} · {game.Total} POINTS", 26));
-        body.Add(Text(complete ? "GAME COMPLETE" : $"Turn {game.FilledCount + 1} / 13 · Roll {game.RollsUsed} / 3", 18, Gold));
-        if (casino) { body.Add(Text($"Entry paid · {Cash(table!.Stake)} · Available cash {Cash(session.Bankroll)}", 15, Muted)); }
-        if (message is not null) { body.Add(Box(Text(message, 16, Gold))); }
-        if (celebration is not null) { body.Add(Box(Text(celebration, 22, Gold), true)); }
-        if (busy)
-        {
-            body.Add(new ActivityIndicator { IsRunning = true, Color = Gold, HeightRequest = 36 });
-            body.Add(Text(casino ? "Saving your turn and playing the opponents…" : "Saving your turn…", 16, Muted));
-        }
+        tray.Add(Columns(Metric(casino ? "CASINO TABLE" : "CASUAL TABLE", "Midnight Dice"), Metric($"TURN {Math.Min(game.FilledCount+1,13)}/13", game.Total + " pts", Gold)));
+        if (message is not null) { tray.Add(Text(message,12,Gold)); }
+        if (celebration is not null) { tray.Add(Pill(celebration,Gold)); }
         if (complete)
         {
             Results(game, table);
@@ -65,15 +61,13 @@ public sealed class DiceGamePage : ContentPage
             AddDice(game);
             if (game.CanScore && game.Dice.Distinct().Count() == 1)
             {
-                body.Add(Box(Text(game.IsAdditionalKniffel ? "FIVE OF A KIND · BONUS!\nCommit for +50 and the maximum in any open box."
+                tray.Add(Box(Text(game.IsAdditionalKniffel ? "FIVE OF A KIND · BONUS!\nCommit for +50 and the maximum in any open box."
                     : "FIVE OF A KIND!\nChoose your box to record this roll.", 20, Gold), true));
             }
             var roll = Button(game.RollsUsed == 0 ? "ROLL FIVE DICE" : $"ROLL AGAIN · {3 - game.RollsUsed} LEFT", "RollDice", async (_, _) => await Roll(), true);
             roll.IsEnabled = !busy && game.CanRoll;
-            body.Add(roll);
-            body.Add(Text(game.RollsUsed == 0 ? "Roll to preview scores in every open box."
-                : game.RollsUsed == 3 ? "Choose an open score box to finish this turn."
-                : "Tap a die to hold or release it. Gold borders mark held dice. Choose a score box whenever you are ready.", 15, Muted));
+            dock.Add(roll);
+            tray.Add(Text(game.RollsUsed == 0 ? "Roll to begin. Your score previews appear below." : $"ROLL {game.RollsUsed}/3 · Tap dice to hold · Choose a box below", 11, Muted));
         }
         if (table is not null) { Opponents(table); }
         body.Add(Text(opponentSheet is null ? "YOUR SCORE SHEET" : KniffelTable.Names[opponentSheet.Value].ToUpperInvariant() + " · SCORE SHEET", 14, Gold));
@@ -138,67 +132,51 @@ public sealed class DiceGamePage : ContentPage
             cell.Add(hold);
             dice.Add(cell, i, 0);
         }
-        body.Add(dice);
-        body.Add(Text(CosmeticCatalog.Get(session.Profile.EquippedDiceSetId).Name, 13, Muted));
+        tray.Add(dice);
     }
 
     private void AddSheet(KniffelGame game, bool playable)
     {
+        var sheet = new VerticalStackLayout { Spacing = 0 };
         foreach (KniffelCategory category in KniffelScoring.Categories)
         {
+            if (category == KniffelCategory.Ones || category == KniffelCategory.ThreeOfAKind)
+            { var caption = Text(category == KniffelCategory.Ones ? "UPPER SECTION · 63 FOR A +35 BONUS" : "LOWER SECTION",9,Gold); caption.Margin = new Thickness(12,10); sheet.Add(caption); }
             int? recorded = game.ScoreFor(category);
-            if (recorded.HasValue)
+            int? preview = game.CanScore && !recorded.HasValue ? game.Preview(category) : null;
+            var row = new Grid { Padding = new Thickness(12,8), HeightRequest = 43, ColumnDefinitions = { new ColumnDefinition { Width = GridLength.Star }, new ColumnDefinition { Width = 70 } } };
+            row.Add(Text(Name(category),14,recorded.HasValue ? Muted : Cream));
+            string score = recorded.HasValue ? recorded.Value.ToString() : preview.HasValue ? "+"+preview : "—";
+            var number = Text(score,17,recorded.HasValue ? Gold : preview > 0 ? Win : Muted); number.HorizontalTextAlignment = TextAlignment.End; number.FontAttributes = FontAttributes.Bold; row.Add(number,1);
+            var frame = new Border { Content = row, BackgroundColor = Color.FromArgb((int)category % 2 == 0 ? "#142E24" : "#10271F"), StrokeThickness = .4, Stroke = new SolidColorBrush(Color.FromArgb("#2C493A")), AutomationId = "DiceScore-"+category };
+            if (playable && preview.HasValue && !busy)
             {
-                body.Add(Box(Text($"{Name(category)} · {recorded.Value} points", 16, Muted)));
-                continue;
+                var tap = new TapGestureRecognizer(); tap.Tapped += async (_,_) => { if (preview==0) { zeroCategory=category; Render(); } else { await Score(category); } }; frame.GestureRecognizers.Add(tap);
             }
-            int? preview = game.CanScore ? game.Preview(category) : null;
-            var choose = Button($"{Name(category)} · {(preview.HasValue ? "+" + preview : "—")}", "DiceScore-" + category, async (_, _) =>
-            {
-                if (busy) { return; }
-                if (preview == 0) { zeroCategory = category; Render(); }
-                else { await Score(category); }
-            });
-            choose.IsEnabled = playable && game.CanScore && !busy;
-            if (preview > 0 && playable) { choose.TextColor = Win; }
-            body.Add(choose);
-            if (playable && zeroCategory == category)
-            {
-                body.Add(Text($"Record zero in {Name(category)} and close this box?", 16, Gold));
-                var confirm = Button("RECORD ZERO", "ConfirmDiceZero", async (_, _) => { if (!busy) { await Score(category); } });
-                confirm.IsEnabled = !busy;
-                body.Add(confirm);
-                body.Add(Button("KEEP BOX OPEN", "CancelDiceZero", (_, _) => { zeroCategory = null; Render(); }));
-            }
+            sheet.Add(frame);
+        }
+        var border = Box(sheet); border.Padding = 0; body.Add(border);
+        if (zeroCategory is { } zero && playable)
+        {
+            dock.Add(Text($"Record zero in {Name(zero)}?",14,Gold));
+            var confirm = Button("RECORD ZERO", "ConfirmDiceZero", async (_,_) => { if (!busy) { await Score(zero); } }); confirm.IsEnabled=!busy;
+            dock.Add(Columns(confirm, Button("KEEP BOX", "CancelDiceZero", (_,_) => { zeroCategory=null; Render(); })));
         }
     }
 
     private void Opponents(KniffelTableState table)
     {
-        body.Add(Text(table.Settled ? "FINAL STANDINGS" : "TABLE STANDINGS · LIVE", 14, Gold));
-        var players = table.Opponents.Select((state, index) => (Name: KniffelTable.Names[index], Game: KniffelGame.Restore(state)))
-            .Append((Name: session.Profile.DisplayName + " (you)", Game: KniffelGame.Restore(table.Player)))
-            .OrderByDescending(item => item.Game.Total).ToArray();
-        int place = 0, prior = -1;
-        for (int i = 0; i < players.Length; i++)
+        var row = new Grid { ColumnSpacing = 6 };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+        var own = Button("YOU\n" + KniffelGame.Restore(table.Player).Total, "DiceOwnSheet", (_,_) => { opponentSheet=null; Render(); },opponentSheet is null); own.FontSize=10; own.Padding=4; row.Add(own);
+        for (int i=0;i<3;i++)
         {
-            if (players[i].Game.Total != prior) { place = i + 1; prior = players[i].Game.Total; }
-            body.Add(Text($"{place}. {players[i].Name} · {players[i].Game.Total} points", 17));
+            int seat=i; row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            var button=Button(KniffelTable.Names[i].ToUpperInvariant()+"\n"+KniffelGame.Restore(table.Opponents[i]).Total,"DiceOpponent"+i,(_,_)=>{ opponentSheet=seat; zeroCategory=null; Render(); },opponentSheet==i);
+            button.FontSize=10; button.Padding=4; button.IsEnabled=!busy; row.Add(button,i+1);
         }
-        foreach (string move in table.LastMoves)
-        { body.Add(Text(move.Replace("Kniffel", "Five of a Kind").Replace("ThreeOfAKind", "Three of a Kind").Replace("FourOfAKind", "Four of a Kind")
-            .Replace("SmallStraight", "Small Straight").Replace("LargeStraight", "Large Straight").Replace("FullHouse", "Full House"), 14, Muted)); }
-        var own = Button("YOUR SCORE SHEET", "DiceOwnSheet", (_, _) => { opponentSheet = null; Render(); });
-        own.IsEnabled = !busy;
-        body.Add(own);
-        for (int i = 0; i < 3; i++)
-        {
-            int index = i;
-            var inspect = Button("INSPECT " + KniffelTable.Names[i].ToUpperInvariant(), "DiceOpponent" + i,
-                (_, _) => { opponentSheet = index; zeroCategory = null; Render(); });
-            inspect.IsEnabled = !busy;
-            body.Add(inspect);
-        }
+        body.Add(row);
+        foreach (string move in table.LastMoves.Take(3)) { body.Add(Text(move.Replace("Kniffel","Five of a Kind"),10,Muted)); }
     }
 
     private void Results(KniffelGame game, KniffelTableState? table)
@@ -235,20 +213,22 @@ public sealed class DiceGamePage : ContentPage
             session.RollDice(casino);
             message = null; celebration = null; zeroCategory = null;
             Render();
-            if (!session.Settings.ReduceDiceAnimations)
+            if (!session.Settings.ReduceDiceAnimations && !VisualMotion.Reduced())
             {
                 View[] moving = diceViews.Where((_, index) => before is null || !before.Held[index]).ToArray();
-                foreach (View die in moving) { die.Scale = .88; die.Rotation = -14; }
+                foreach (View die in moving) { die.Scale = .8; die.Rotation = -200; die.TranslationY = -10; }
                 try
                 {
                     await Task.WhenAll(moving.SelectMany(die => new[]
-                    { die.ScaleToAsync(1, 220, Easing.CubicOut), die.RotateToAsync(0, 260, Easing.CubicOut) }));
+                    { die.ScaleToAsync(1, 440, Easing.BounceOut), die.RotateToAsync(0, 520, Easing.CubicOut), die.TranslateToAsync(0,0,520,Easing.BounceOut) }));
                 }
-                finally { foreach (View die in moving) { die.Scale = 1; die.Rotation = 0; } }
+                finally { foreach (View die in moving) { die.Scale = 1; die.Rotation = 0; die.TranslationY = 0; } }
             }
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException) { message = exception.Message.Split('\n')[0]; }
         finally { busy = false; Render(); }
+        KniffelState? result = casino ? session.DiceTable?.Player : session.CasualDice;
+        if (result is { RollsUsed: > 0 } && result.Dice.Distinct().Count()==1) { VisualMotion.Celebrate(root,Gold); }
     }
 
     private async Task Score(KniffelCategory category)

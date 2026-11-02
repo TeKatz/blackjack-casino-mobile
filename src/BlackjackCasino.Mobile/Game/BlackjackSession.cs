@@ -133,6 +133,13 @@ public sealed partial class BlackjackSession
     });
 
     public void Rename(string name) => Change(() => Profile.DisplayName = ProfileIdentity.Validate(name));
+    public void SetReducedInterfaceMotion(bool reduced) => Change(() => Settings.ReduceInterfaceMotion = reduced);
+    public void UseAppearance(string id, bool purchase) => Change(() =>
+    {
+        var service=new ProgressionService(Profile);
+        if(purchase){var result=service.PurchaseCosmetic(id);if(!result.Success){throw new InvalidOperationException(result.Message);}}
+        if(!service.EquipCosmetic(id)){throw new InvalidOperationException("Unlock this cosmetic before equipping it.");}
+    });
     public void UpdateSettings(bool largeCards, bool confirmSurrender) => Change(() =>
     {
         Settings.LargeCards = largeCards;

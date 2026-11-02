@@ -4,7 +4,7 @@ using static BlackjackCasino.Mobile.CasinoStyle;
 
 namespace BlackjackCasino.Mobile;
 
-public sealed class CasinoFloorPage : ContentPage
+public sealed class CasinoFloorPage : CasinoPage
 {
     private readonly BlackjackSession session;
     private readonly VerticalStackLayout body = new()
@@ -25,7 +25,7 @@ public sealed class CasinoFloorPage : ContentPage
     private void Render()
     {
         body.Children.Clear();
-        body.Add(Text(statistics ? "FLOOR STATISTICS" : "THE CASINO FLOOR", 30, Gold));
+        body.Add(Header("THE MIDNIGHT CLUB", statistics ? "Your casino career" : "Find your rhythm.", null, "club_nav_statistics.png"));
         body.Add(Text($"{Cash(session.Bankroll)} play cash · {session.Profile.Coins:N0} coins", 18));
         if (statistics) { Statistics(); return; }
         body.Add(Text("Three machines. Original rules. Every spin saves before its result appears.", 16, Muted));
@@ -34,7 +34,7 @@ public sealed class CasinoFloorPage : ContentPage
         foreach (MobileSlotGame game in Enum.GetValues<MobileSlotGame>())
         {
             var card = new VerticalStackLayout { Spacing = 12 };
-            card.Add(Text(Name(game), 24, Accent(game)));
+            card.Add(LobbyPage.SymbolHero(game)); card.Add(Text(Name(game), 24, Accent(game)));
             card.Add(Text(game switch
             {
                 MobileSlotGame.Reels => "Three classic reels, one centre payline. Cherries, lemons, bells, BARs and lucky sevens.",

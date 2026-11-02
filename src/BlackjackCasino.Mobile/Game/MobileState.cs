@@ -6,6 +6,7 @@ namespace BlackjackCasino.Mobile.Game;
 
 public sealed class MobileSettings
 {
+    public bool ReduceInterfaceMotion { get; set; }
     public bool ReducePackAnimations { get; set; }
     public bool ReduceDiceAnimations { get; set; }
     public bool ReduceSlotAnimations { get; set; }
