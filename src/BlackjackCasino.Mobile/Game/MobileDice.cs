@@ -141,7 +141,7 @@ public sealed partial class BlackjackSession
                 if (table.Player is null || table.Opponents is null || table.Opponents.Any(item => item is null))
                 { throw new ArgumentException("Missing casino score sheet."); }
                 KniffelTable.Validate(table);
-                if (table.LastMoves is null || table.LastMoves.Length is not (0 or 3)
+                if (table.LastMoves is null || table.LastMoves.Length is not (0 or 3) || table.LastMoves.Any(string.IsNullOrWhiteSpace)
                     || KniffelTable.NeedsOpponents(table)
                     || !Profile.Kniffel.EnteredTableIds.Contains(table.Player.GameId)
                     || table.Settled != Profile.Kniffel.SettledTableIds.Contains(table.Player.GameId)

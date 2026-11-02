@@ -9,6 +9,7 @@ public sealed partial class BlackjackSession
     public const decimal StartingCash = 1_000m;
     private readonly Func<ICardShoe> createShoe;
     private readonly Action<MobileState>? persist;
+    private readonly object mutationGate = new();
     private MobileState state = new();
     private SavedShoe? shoe;
 
@@ -214,6 +215,11 @@ public sealed partial class BlackjackSession
     }
 
     private void Change(Action change)
+    {
+        lock (mutationGate) { ChangeUnderLock(change); }
+    }
+
+    private void ChangeUnderLock(Action change)
     {
         MobileState before = Export();
         try { change(); persist?.Invoke(Export()); }

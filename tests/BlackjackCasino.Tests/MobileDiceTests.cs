@@ -312,6 +312,24 @@ public sealed class MobileDiceTests
     }
 
     [Fact]
+    public async Task OverlappingScoreCommandsAdoptOnlyOneAiTurn()
+    {
+        var session = new BlackjackSession();
+        session.StartDiceTable(100);
+        session.RollDice(true, () => 3);
+        Task first = session.ScoreDiceAsync(true, KniffelCategory.Threes);
+        Task repeated = session.ScoreDiceAsync(true, KniffelCategory.Threes);
+        try { await Task.WhenAll(first, repeated); }
+        catch (InvalidOperationException) { }
+        Assert.Equal(1, new[] { first, repeated }.Count(task => task.IsCompletedSuccessfully));
+        Assert.Single(session.DiceTable!.Player.Entries);
+        Assert.All(session.DiceTable.Opponents, other => Assert.Single(other.Entries));
+        Assert.Equal(900m, session.Bankroll);
+        Assert.Equal(0, session.Profile.Kniffel.CompletedGames);
+        _ = Reload(session);
+    }
+
+    [Fact]
     public void RealSaveStoreRoundTripKeepsHeldDiceAndTableDebit()
     {
         string directory = Path.Combine(Path.GetTempPath(), "mobile-dice-" + Guid.NewGuid().ToString("N"));

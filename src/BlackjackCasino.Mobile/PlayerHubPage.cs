@@ -46,8 +46,10 @@ public sealed class PlayerHubPage : ContentPage
             case HubSection.Shop: Shop(); break;
             case HubSection.Settings: Settings(); break;
         }
-        body.Add(Button("BACK TO LOBBY", "HubBack", async (_, _) => await Navigation.PopAsync()));
+        body.Add(Button("BACK", "HubBack", async (_, _) => await Navigation.PopAsync()));
     }
+
+    protected override void OnAppearing() { base.OnAppearing(); Render(); }
 
     private void Profile()
     {
