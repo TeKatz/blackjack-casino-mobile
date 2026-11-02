@@ -51,6 +51,7 @@ internal static class CollectionCardView
         };
         if (owned && card.Rarity >= CollectionRarity.Epic)
         {
+            frame.Content = null;
             var glass = new Grid { IsClippedToBounds = true }; glass.Add(content);
             var sheen = new BoxView { Color = Colors.White.WithAlpha(.14f), WidthRequest = 22, Rotation = 22, InputTransparent = true, TranslationX = -400 };
             glass.Add(sheen); frame.Content = glass; bool played = false;
