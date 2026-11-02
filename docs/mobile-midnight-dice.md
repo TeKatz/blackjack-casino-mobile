@@ -61,9 +61,23 @@ final settlement rollback, forfeit, paid-game exclusion, simultaneous Blackjack/
 casual/pack saves, Coin-only cosmetics, Dice challenge packs, detached checkpoints,
 invalid saves and real checksummed file round-trips.
 
-Compilation, regression results and the APK link are recorded after CI completes.
-This authoring environment has no .NET or Android SDK; local source inspection is
-not a successful build or a real-device launch test.
+Verified CI: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41424722457
+
+- Tested app revision: `b9943ba133cb9176f5e6583917c75db2df728c46`.
+- All three jobs succeeded. Desktop Release and Android builds: 0 warnings / 0 errors.
+- 478 tests passed, 0 failed, 0 skipped, including 15 new Mobile Dice integration tests.
+- The additional overlapping-score test verifies that repeated commands adopt exactly
+  one complete AI turn. Mutations are serialized before checkpoint comparison and commit.
+- Localization parity, original artwork and control-template checks passed.
+- Android preparation decoded all 136 unique card images; signing identity and
+  application ID remain unchanged from 0.3/0.4; the APK uses version 0.5.0 (5).
+- Download: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41424722457/artifacts/13131553315
+- Artifact ZIP: 97,531,601 bytes (approximately 97.5 MB), expires 2026-11-16.
+- ZIP includes `BlackjackEmpire-debug.apk`, its SHA-256 checksum, build revision
+  and the artwork validation report. Upload completed and the artifact is not expired.
+
+The authoring environment has no .NET or Android SDK; compilation and signing were
+verified in GitHub Actions. No 0.5 device launch or runtime visual acceptance is claimed.
 
 ## Device acceptance
 
