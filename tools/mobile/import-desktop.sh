@@ -15,7 +15,7 @@ git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 git fetch --no-tags https://github.com/TeKatz/blackjack-casino.git "$source_commit"
 git merge --no-ff --no-commit --allow-unrelated-histories -s ours "$source_commit"
 # Keep the mobile configuration and workflows; inherit all other source files.
-git archive "$source_commit" | tar -x --exclude='.github' --exclude='Directory.Packages.props' --exclude='README.md'
+git archive "$source_commit" | tar -x --anchored --exclude='.github' --exclude='Directory.Packages.props' --exclude='README.md'
 git show "$source_commit:README.md" > docs/desktop-original-readme.md
 git add .
 git commit -m 'Import pinned desktop baseline with complete ancestry for Android development'

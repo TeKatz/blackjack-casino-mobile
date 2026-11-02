@@ -92,5 +92,10 @@ Run: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41386429178
 - Original desktop solution: Release build successful, 0 warnings / 0 errors.
 - Existing regression suite: 428 passed, 0 failed, 0 skipped.
 - Localization parity, 136-card artwork validation and control-template contract: passed.
-- Android packaging and real-device launch: recorded separately after completion;
-  no hardware launch has yet been verified.
+- Android build and signing: successful; `BlackjackEmpire-debug-apk` uploaded.
+- Download: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41386429178/artifacts/13115926963
+- Artifact ZIP: approximately 83.4 MB, available until 2026-11-16.
+- APK compiled from imported revision `f4ebadd7df99e5d9b45fd2f2536c6ca70cd54702`.
+- Real-device installation, launch and navigation remain unverified; run the hardware checklist.
+- Subsequent documentation/import-script corrections do not change the compiled app.
+- Bootstrap archive exclusions were narrowed to root files, with shell syntax and archive-content checks passing.
