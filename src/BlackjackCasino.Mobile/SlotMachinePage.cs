@@ -19,6 +19,7 @@ public sealed class SlotMachinePage : CasinoPage
     private bool compact;
     private decimal wager;
     private bool busy;
+    private bool revealing;
     private bool paytable;
     private string? message;
 
@@ -44,7 +45,9 @@ public sealed class SlotMachinePage : CasinoPage
     {
         body.Children.Clear(); reels.Clear(); header.Children.Clear(); dock.Children.Clear();
         Color accent = CasinoFloorPage.Accent(game);
-        header.Add(Columns(Metric("THE MIDNIGHT CLUB", Title!), Metric("PLAY CASH", Cash(session.Bankroll), Gold)));
+        MobileSlotReceipt? last = session.SlotHistory.FirstOrDefault(spin => spin.Game == game);
+        decimal shownCash = busy && !revealing && last is not null ? last.Before-last.Stake : session.Bankroll;
+        header.Add(Columns(Metric("THE MIDNIGHT CLUB", Title!), Metric("PLAY CASH", Cash(shownCash), Gold)));
         if (message is not null) { body.Add(Box(Text(message, 16, Gold))); }
         if (paytable) { Paytable(); return; }
         int free = session.FreeSlotSpins(game);
@@ -52,9 +55,8 @@ public sealed class SlotMachinePage : CasinoPage
         { body.Add(Pill($"{free} FREE SPINS · WAGER {Cash(session.SlotBet(game))}", Win)); }
         if (game == MobileSlotGame.NeonVault)
         { body.Add(Text($"Vault energy · {session.NeonEnergy} / {NeonVaultRules.VaultEnergyTarget}{(session.NeonOverrideArmed ? " · OVERRIDE READY" : "")}", 16, accent)); }
-        MobileSlotReceipt? last = session.SlotHistory.FirstOrDefault(spin => spin.Game == game);
         AddGrid(last);
-        if (last is not null)
+        if (last is not null && (!busy || revealing))
         {
             string headline = last.Net > 0 ? "NET WIN · " + Net(last.Net) : last.Net < 0 ? "NET LOSS · " + Net(last.Net) : "EVEN · NO NET CHANGE";
             body.Add(Box(Text(headline, 22, last.Net > 0 ? Win : last.Net < 0 ? Loss : Gold), true));
@@ -64,7 +66,7 @@ public sealed class SlotMachinePage : CasinoPage
             body.Add(Text($"+{last.Award.PlayerExperience} XP · +{last.Award.SeasonExperience} SEASON XP · +{last.Award.CoinsEarned} COINS", 10, Gold));
             
         }
-        else { body.Add(Text("Choose a play-cash wager. Your first result will appear here.", 16, Muted)); }
+        else { body.Add(Text(busy ? "THE REELS ARE IN MOTION…" : "Choose your wager. Find your rhythm.", 13, Muted)); }
         bool locked = session.IsRoundActive || session.IsDiceTableActive;
         if (locked) { body.Add(Text("Finish your Blackjack round or paid Dice table before spinning.", 16, Gold)); }
         if (free == 0)
@@ -133,7 +135,7 @@ public sealed class SlotMachinePage : CasinoPage
     private async Task Spin()
     {
         if (busy) { return; }
-        busy = true;
+        busy = true; revealing = false;
         try
         {
             session.SpinSlot(game, wager);
@@ -143,11 +145,12 @@ public sealed class SlotMachinePage : CasinoPage
                 CancellationToken token = animation.Token;
                 var moving = reels.ToArray();
                 await Task.WhenAll(moving.Select((reel,index) => reel.Spin(index,token)));
+                revealing = true; Render();
                 MobileSlotReceipt? result = session.SlotHistory.FirstOrDefault(spin => spin.Game == game);
                 if (result is { Payout: > 0 })
                 {
                     VisualMotion.Celebrate(root, CasinoFloorPage.Accent(game));
-                    await Task.WhenAll(moving.Select(reel => reel.WinPulse(Gold)));
+                    await Task.WhenAll(reels.Select(reel => reel.WinPulse(Gold)));
                 }
             }
         }

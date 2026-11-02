@@ -98,8 +98,8 @@ def main():
         save(f'club_nav_{name}.png',(DESKTOP/f'Assets/Navigation/{name}.png').read_bytes(),f'Assets/Navigation/{name}.png')
     for path in sorted((DESKTOP/'Assets/Portraits').glob('*.png')):
         with Image.open(path) as image:
-            image=image.convert('RGB'); image.thumbnail((192,192), Image.Resampling.LANCZOS)
-            output=io.BytesIO(); image.save(output,'JPEG',quality=88)
+            image=image.convert('RGB'); image.thumbnail((512,512), Image.Resampling.LANCZOS)
+            output=io.BytesIO(); image.save(output,'JPEG',quality=92)
             save('club_portrait_'+path.stem.replace('-','_')+'.jpg',output.getvalue(),str(path.relative_to(DESKTOP)))
     guest='''<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#254b39"/><stop offset="1" stop-color="#0b1915"/></linearGradient></defs><rect width="192" height="192" rx="24" fill="url(#g)"/><circle cx="96" cy="96" r="78" fill="none" stroke="#d6b478" stroke-width="2"/><circle cx="96" cy="72" r="26" fill="#d6b478"/><path d="M43 147Q43 105 96 105Q149 105 149 147Z" fill="#d6b478"/><path d="M72 109L96 139L120 109L109 153H83Z" fill="#14281f"/></svg>'''
     save('club_portrait_classic.svg',guest.encode(),'mobile-house-guest-badge')

@@ -56,8 +56,7 @@ def shot(name):
 
 def home():
     adb('shell','am','force-stop',PACKAGE)
-    component=adb('shell','cmd','package','resolve-activity','--brief',PACKAGE).strip().splitlines()[-1]
-    adb('shell','am','start','-W','-n',component)
+    adb('shell','am','start','-W','-a','android.intent.action.MAIN','-c','android.intent.category.LAUNCHER','-p',PACKAGE)
     find(['HomeTab','A different kind of night.'],wait=40);time.sleep(.4)
 
 def main():

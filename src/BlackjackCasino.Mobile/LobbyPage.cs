@@ -33,7 +33,7 @@ public sealed class LobbyPage : CasinoPage
         copy.Add(Text("THE MIDNIGHT CLUB", 10, Gold)); copy.Add(Text("A different kind of night.", 29));
         copy.Add(Text($"Welcome back, {session.Profile.DisplayName}.", 13, Muted)); welcome.Add(copy);
         welcome.Add(new Border { HeightRequest = 56, WidthRequest = 56, Stroke = new SolidColorBrush(ClubAssets.FrameAccent(session.Profile.EquippedFrameId)), StrokeShape = new RoundRectangle { CornerRadius = 28 },
-            Content = new Image { Source = ClubAssets.Portrait(session.Profile.EquippedPortraitId), Aspect = Aspect.AspectFill }, IsClippedToBounds = true }, 1);
+            Content = new Image { Source = ClubAssets.Portrait(session.Profile.EquippedPortraitId), Aspect = Aspect.AspectFill }, Clip = new EllipseGeometry { Center=new Point(28,28), RadiusX=28, RadiusY=28 } }, 1);
         body.Add(welcome);
         if (recoveryNotice is not null) { body.Add(Box(Text(recoveryNotice, 13, Gold))); }
         var identity = new VerticalStackLayout { Spacing = 12 };
