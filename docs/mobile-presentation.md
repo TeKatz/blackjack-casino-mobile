@@ -29,11 +29,13 @@ The unused primitive SlotSymbolArt implementation is removed.
 
 - Lobby: illustrated game tiles, player wallet, XP rail, original emblems and bottom
   navigation replace the full-width menu-button list.
-- Blackjack: felt/table ornament, original styled card faces/backs, dealer and player
+- Blackjack: felt/table ornament, native card faces/backs in the six original
+  palettes, dealer and player
   panels, fixed action/wager dock, finite card dealing and win particles.
 - Slots: original cabinet skins and source symbols, clipped moving reel strips,
   staggered stops on the saved outcome, win glow/particles, and a fixed wager/spin
-  dock. Landscape uses compact reels/dock. Decorative strips never draw outcomes.
+  dock. Landscape uses compact reels and a side panel for wager/spin, rebuilt only
+  after native size measurement completes. Decorative strips never draw outcomes.
 - Midnight Dice: persistent dice tray/roll dock, original gradient dice with held
   glow, tumbling/bounce feedback, compact score sheet and opponent tabs.
 - Album: artwork-led theme covers, pack covers, rarity frames, finite foil sheen,
@@ -57,7 +59,40 @@ lobby, dealt Blackjack hand, all three machines, portrait/landscape Neon, Dice,
 Album, pack reveal, profile and Vault. It saves screenshots, reel-motion MP4s and
 an inspection contact sheet. A unit build alone is not visual acceptance.
 
-Compilation, regression, screenshots and the APK link are recorded after verification.
+The separate Android visual regression workflow supports test-driver iteration
+without rebuilding the application. tools/mobile/visual-smoke-source.json pins an
+existing APK run and its exact source revision; the downloaded build-revision.txt
+must match before installation. The driver resolves the installed launcher, retries
+transient Android UI snapshot failures, waits for enabled action controls and records
+real reel motion. Screenshots must be viewed, including landscape and dealt cards;
+the screenshot count alone does not establish visual acceptance.
+
+Verified source: e7aa5dbbb34505ea4763a02e5a7c6711bb2272c6.
+Later branch changes are test-driver/documentation changes only.
+
+- Full 500/500 regression suite passed; Desktop and Android builds each report
+  zero warnings and zero errors in [run 41449883800](https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41449883800).
+- The integrated native UI job passed. A second run with the hardened driver also
+  passed against that exact APK: [visual regression 41451905530](https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41451905530).
+- All 13 native screenshots were viewed, with full-size inspection of landscape
+  controls, dealt/settled card faces and rolled Dice. The initial landscape
+  measurement/reparenting defect was fixed, and text-presentation suit glyphs
+  prevent Android's color emoji fallback from overriding card-set ink colors.
+- All three reel recordings are retained. Sampled native frames confirm moving
+  clipped strips followed by the receipt's final symbols; no outcome RNG is used
+  by the motion. The harness confirms Blackjack settlement before machine entry.
+- Original preparation validates all 36 presentation assets plus the existing
+  136 Album card resources. Raw Neon/Cat/Navigation bitmap hashes are recorded.
+- [Signed APK and checksum](https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41449883800/artifacts/13145335210)
+  and [screenshots/MP4s/report](https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41451905530/artifacts/13146055591).
+  Artifacts expire 2026-11-16. APK SHA256:
+  `19d356b75b44bdb0b53209afdb286e419ad40f7d77dff197de47834846b367a7`.
+- Development signing certificate SHA256 remains
+  `125ac55178c8de855f9ca263bf002d463e0b904c92a3ae6d07f48221c5a24971`.
+
+Emulator visual inspection is complete. No physical-phone appearance, animation
+frame pacing or in-place upgrade test of 0.7 is claimed. The user confirmed the
+existing 0.6 feature set; 0.7 device acceptance remains pending.
 App version: 0.7.0 (7). Application ID and development signing key are unchanged.
 Install over the existing 0.3–0.6 app without uninstalling. No merge to main or
 changes to the original desktop repository are included.

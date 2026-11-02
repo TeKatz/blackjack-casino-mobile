@@ -4,7 +4,17 @@ Independent Android client for Blackjack Empire. This repository starts from the
 Windows desktop application's pinned source and complete Git ancestry, then develops
 a separate touch interface. The desktop repository is unchanged.
 
-## Playable Android preview · 0.6.0
+## Playable Android preview · 0.7.0
+
+The Midnight Club presentation update replaces the placeholder mobile interface.
+The lobby has illustrated game tiles, original navigation emblems, a wallet/XP rail
+and bottom navigation. Tables use the original card and Dice palettes; slots show
+the actual original Neon Vault and Nine Lives artwork and converted Midnight Reels
+vector drawings. Clipped reel strips, card dealing, Dice tumbling, pack flips, foil
+sheen and finite win effects now accompany the saved game results. Album, profile,
+shop, challenges, season and Vault share the club palette and typography. A reduced
+interface motion option is available alongside the existing per-game settings.
+
 
 Play a complete Blackjack round using the original Core: choose a wager, Hit/Stand,
 Double, Split, Surrender or decide on Insurance when offered. The dealer hole card is
@@ -27,7 +37,7 @@ The Casino Floor adds Midnight Reels, Neon Vault and Nine Lives using the origin
 Core rules, weighted draws and features. Bonus spins, locked trigger wagers, Neon
 energy and Security Override resume after restarting. Results, wallet, XP, season
 rewards and statistics save together before finite column-reveal feedback. Machine
-paytables, native vector symbols and twenty recent spin receipts are included.
+paytables, original game symbols and twenty recent spin receipts are included.
 The Casino Vault fills from 2% of new eligible wagers and grants the original cash,
 tier bonus and card pack when full. Historical wagers establish career tiers without
 retroactive Vault cash. Saved paid games and pending bonuses have explicit cash-game locks.
@@ -36,18 +46,23 @@ and separate reduced-animation settings for packs, dice and slots.
 
 Download `BlackjackEmpire-debug-apk` from a successful **Android foundation** Actions run,
 extract `BlackjackEmpire-debug.apk`, and install it on Android 8.0 or later.
-Install 0.6 over the existing 0.3–0.5 app without uninstalling. The signing identity and
+Install 0.7 over the existing 0.3–0.6 app without uninstalling. The signing identity and
 application ID are unchanged, preserving the local profile. The old 0.1/0.2 previews
 used temporary signing keys and had no durable profile.
 No desktop saves are imported or changed.
 
-[Download the verified 0.6.0 preview](https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41434585865/artifacts/13135484281)
-(approximately 97.6 MB ZIP, available until 2026-11-16). All 499 tests passed; both
-the desktop reference and Android APK builds completed without warnings or errors.
-The 0.3 profile/restart device test passed; the user reports that 0.5 runs without
-major errors. Device acceptance of the new 0.6 integrations remains pending.
+[Download the verified 0.7.0 preview](https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41449883800/artifacts/13145335210)
+(approximately 99.3 MB ZIP, available until 2026-11-16). All 500 tests passed; both
+the desktop reference and signed Android APK builds completed without warnings or
+errors. The same APK passed two native Android emulator runs, including dealt
+Blackjack, all three machines, landscape Neon, Dice, Album/pack reveal, profile and
+Vault. The 13 screenshots were inspected and the reel videos were checked for
+actual movement and stops. [Native screenshots and videos](https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41451905530/artifacts/13146055591).
+The user confirmed the earlier feature set works. Final appearance and animation
+pacing on the user's physical phone remain for device acceptance.
 
-See [Casino Floor integration and device checklist](docs/mobile-casino-floor.md),
+See [presentation and native visual verification](docs/mobile-presentation.md),
+[Casino Floor integration and device checklist](docs/mobile-casino-floor.md),
 [Midnight Dice integration](docs/mobile-midnight-dice.md),
 [Album integration](docs/mobile-collector-album.md), and the
 [profile architecture](docs/mobile-profile-progression.md).
@@ -59,6 +74,7 @@ Use .NET 10, JDK 17, Android SDK and `dotnet workload install maui-android`.
 ```powershell
 python -m pip install Pillow==13.0.0
 python tools/mobile/prepare_collection_art.py
+python tools/mobile/prepare_presentation_art.py
 dotnet build src/BlackjackCasino.Mobile/BlackjackCasino.Mobile.csproj -t:InstallAndroidDependencies -f net10.0-android -p:AcceptAndroidSDKLicenses=true
 dotnet build src/BlackjackCasino.Mobile/BlackjackCasino.Mobile.csproj -c Debug -t:SignAndroidPackage
 ```
