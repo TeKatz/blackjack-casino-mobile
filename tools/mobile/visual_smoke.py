@@ -40,7 +40,14 @@ def bounds(node):
 def find(needles, scroll=False, wait=12):
     end=time.monotonic()+wait; attempts=0
     while time.monotonic()<end:
-        for n in nodes():
+        current=nodes()
+        if any(n.get('text','')=="Pixel Launcher isn't responding" for n in current):
+            close=next((n for n in current if n.get('resource-id')=='android:id/aerr_close'),None)
+            if close is not None:
+                x1,y1,x2,y2=bounds(close);adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
+                print('Dismissed emulator Pixel Launcher ANR; app ANRs are never dismissed.',flush=True)
+                continue
+        for n in current:
             fields=[n.get('text',''),n.get('content-desc',''),n.get('resource-id','')]
             if any(needle.casefold()==field.casefold() or field.endswith('/'+needle) for needle in needles for field in fields):
                 x1,y1,x2,y2=bounds(n)
