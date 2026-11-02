@@ -4,23 +4,24 @@ Independent Android client for Blackjack Empire. This repository starts from the
 Windows desktop application's pinned source and complete Git ancestry, then develops
 a separate touch interface. The desktop repository is unchanged.
 
-## Playable Android preview · 0.2.0
+## Playable Android preview · 0.3.0
 
 Play a complete Blackjack round using the original Core: choose a wager, Hit/Stand,
 Double, Split, Surrender or decide on Insurance when offered. The dealer hole card is
 hidden until settlement; results update the practice bankroll exactly once.
 
-Practice cash starts at $1,000. Cash and open rounds survive lobby navigation and
-backgrounding while the process remains alive; restarting the app process resets them.
-Profile saving and progression are planned for the next milestone.
+A persistent local profile now connects play cash, XP, levels, Coins, Blackjack
+statistics, round history, challenges, the season pass and a title shop. Open rounds
+and rewards save after each accepted action and resume after restarting the app.
+Settings include larger cards, surrender confirmation and a remembered wager.
 
 Download `BlackjackEmpire-debug-apk` from a successful **Android foundation** Actions run,
 extract `BlackjackEmpire-debug.apk`, and install it on Android 8.0 or later.
-The development APK includes its assemblies and does not require a debugger.
-Debug signing keys may differ between runners: uninstall an older preview if Android
-reports a signature mismatch. No desktop saves are touched.
+0.3 introduces a stable development signing identity; installing over 0.2 may require
+one uninstall. Keep 0.3 installed for later updates to preserve its new local profile.
+No desktop saves are imported or changed.
 
-See [playable scope and device checklist](docs/mobile-blackjack.md).
+See [profile/progression integration and device checklist](docs/mobile-profile-progression.md).
 
 ## Build
 
@@ -43,5 +44,5 @@ for subsequent Android changes. Desktop changes are imported deliberately after 
 never synchronized or pushed back automatically.
 
 The foundation APK has passed the user's installation, launch and navigation test.
-The next device test covers a complete round in 0.2.0, followed by persistent Android
-profiles and lifecycle-safe saving. See [architecture and acceptance](docs/mobile-foundation.md).
+The user also confirmed complete Blackjack rounds in 0.2.0. The 0.3 device test
+covers persistent rounds, profile progression and in-place updates. See [architecture and acceptance](docs/mobile-foundation.md).

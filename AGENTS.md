@@ -12,4 +12,8 @@ The inherited BlackjackCasino.sln is desktop-only and must not require Android t
 Core currently generates Sudoku resources through Windows PowerShell; initial CI uses Windows.
 Run the existing regression suite when changing Core or persistence.
 Do not claim a successful build, APK installation, or hardware launch without evidence.
-No desktop save migration, cloud sync, full casino port or release signing is part of foundation.
+No desktop save migration or cloud sync. Mobile 0.3 has independent persistent state;
+read docs/mobile-profile-progression.md before changing persistence or progression.
+Keep the application ID and PUBLIC development signing key stable and increase
+ApplicationVersion for updates. That key must never sign production releases.
+Preserve journal/wallet/reward atomicity and test recovery and duplicate-reward behavior.

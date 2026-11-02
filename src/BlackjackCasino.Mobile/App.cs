@@ -1,15 +1,35 @@
+using BlackjackCasino.Mobile.Game;
+using static BlackjackCasino.Mobile.CasinoStyle;
+
 namespace BlackjackCasino.Mobile;
 
 public sealed class App : Application
 {
-    private readonly Game.BlackjackSession session = new();
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        var navigation = new NavigationPage(new LobbyPage(session))
+        Page root;
+        try
         {
-            BarBackgroundColor = Color.FromArgb("#10251F"),
-            BarTextColor = Color.FromArgb("#E7C879"),
-        };
-        return new Window(navigation);
+            var store = new MobileSaveStore(FileSystem.AppDataDirectory);
+            MobileState? saved = store.Load();
+            BlackjackSession session = saved is null ? new BlackjackSession(persist: store.Save)
+                : BlackjackSession.Restore(saved, store.Save);
+            if (saved is null) { store.Save(session.Export()); }
+            root = new LobbyPage(session, store.RecoveryNotice);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            root = new ContentPage
+            {
+                Title = "Profile unavailable", BackgroundColor = Ink,
+                Content = new VerticalStackLayout
+                {
+                    Padding = 28, Spacing = 24,
+                    Children = { Text("Your profile needs attention", 28, Gold), Text(exception.Message, 17, Muted),
+                        Text("Existing save files have been left in place. Close and reopen the app after resolving the problem. Reinstalling removes local data.", 16, Muted) },
+                },
+            };
+        }
+        return new Window(new NavigationPage(root) { BarBackgroundColor = Ink, BarTextColor = Gold });
     }
 }

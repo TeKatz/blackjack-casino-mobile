@@ -17,10 +17,12 @@ public sealed class BlackjackTablePage : ContentPage
     private string betText = "25";
     private string? error;
     private bool busy;
+    private bool surrenderPending;
 
     public BlackjackTablePage(BlackjackSession session)
     {
         this.session = session;
+        betText = session.Settings.LastWager.ToString(CultureInfo.InvariantCulture);
         Title = "Blackjack";
         BackgroundColor = Ink;
         Content = new ScrollView { Content = table };
@@ -30,7 +32,7 @@ public sealed class BlackjackTablePage : ContentPage
     private void Render()
     {
         table.Children.Clear();
-        table.Add(Text("YOUR PRIVATE TABLE", 13, Gold));
+        table.Add(Text($"{session.Profile.DisplayName} · LEVEL {session.Profile.Level} · {session.Profile.Coins:N0} COINS", 13, Gold));
         table.Add(Text($"{Cash(session.AvailableCash)} available", 27, Gold));
         if (session.IsRoundActive)
         {
@@ -52,6 +54,12 @@ public sealed class BlackjackTablePage : ContentPage
             summary.AutomationId = "RoundResult";
             SemanticProperties.SetDescription(summary, $"Round complete. Net result {Net(result.TotalNet)}.");
             table.Add(Box(summary));
+            if (session.LastAward.PlayerExperience > 0)
+            {
+                var award = session.LastAward;
+                table.Add(Text($"+{award.PlayerExperience} XP · +{award.SeasonExperience} season XP · +{award.CoinsEarned} coins", 16, Gold));
+                if (award.HasLevelUp) { table.Add(Text($"LEVEL UP · Level {session.Profile.Level}", 22, Win)); }
+            }
         }
         if (!session.IsRoundActive) { AddBettingControls(); }
         if (round is not null)
@@ -85,7 +93,7 @@ public sealed class BlackjackTablePage : ContentPage
         table.Add(Button("BACK TO LOBBY", "BackToLobby", async (_, _) => await Navigation.PopAsync()));
         if (session.IsRoundActive)
         {
-            table.Add(Text("Your round stays at this table while you visit the lobby.", 13, Muted));
+            table.Add(Text("Your open round saves automatically, including after an app restart.", 13, Muted));
         }
     }
 
@@ -93,8 +101,8 @@ public sealed class BlackjackTablePage : ContentPage
     {
         if (session.Bankroll < session.Rules.MinimumBet)
         {
-            table.Add(Text("Your practice cash is below the minimum bet. Refill to take another seat.", 16, Muted));
-            table.Add(Button("REFILL PRACTICE CASH", "RefillCash", (_, _) => Run(session.RefillPracticeCash), true));
+            table.Add(Text("Your play cash is below the minimum bet. Refill to take another seat.", 16, Muted));
+            table.Add(Button("REFILL PLAY CASH", "RefillCash", (_, _) => Run(session.RefillPracticeCash), true));
             return;
         }
         var entry = new Entry
@@ -103,7 +111,7 @@ public sealed class BlackjackTablePage : ContentPage
             TextColor = Colors.White, PlaceholderColor = Muted, BackgroundColor = Panel,
             MinimumHeightRequest = 54, MaxLength = 8, AutomationId = "BetAmount",
         };
-        SemanticProperties.SetDescription(entry, "Practice wager in whole dollars, from 1 to 1000.");
+        SemanticProperties.SetDescription(entry, "Play wager in whole dollars, from 1 to 1000.");
         entry.TextChanged += (_, args) => betText = args.NewTextValue ?? "";
         table.Add(Text("CHOOSE YOUR WAGER", 13, Gold));
         table.Add(entry);
@@ -153,6 +161,14 @@ public sealed class BlackjackTablePage : ContentPage
 
     private void AddPlayerActions()
     {
+        if (surrenderPending)
+        {
+            table.Add(Text("Surrender this hand and lose half its wager?", 18, Gold));
+            table.Add(Button("CONFIRM SURRENDER", "ConfirmSurrender", (_, _) => Run(() =>
+            { surrenderPending = false; session.Act(PlayerAction.Surrender); })));
+            table.Add(Button("KEEP PLAYING", "CancelSurrender", (_, _) => { surrenderPending = false; Render(); }, true));
+            return;
+        }
         IReadOnlySet<PlayerAction> available = session.AvailableActions();
         var grid = new Grid
         {
@@ -168,7 +184,12 @@ public sealed class BlackjackTablePage : ContentPage
         for (int i = 0; i < actions.Length; i++)
         {
             var (label, action) = actions[i];
-            var button = Button(label, action.ToString(), (_, _) => Run(() => session.Act(action)), i < 2);
+            var button = Button(label, action.ToString(), (_, _) =>
+            {
+                if (action == PlayerAction.Surrender && session.Settings.ConfirmSurrender)
+                { surrenderPending = true; Render(); }
+                else { Run(() => session.Act(action)); }
+            }, i < 2);
             button.IsEnabled = available.Contains(action);
             grid.Add(button, i % 2, i / 2);
             if (action == PlayerAction.Surrender) { Grid.SetColumnSpan(button, 2); }
@@ -201,18 +222,18 @@ public sealed class BlackjackTablePage : ContentPage
         return result;
     }
 
-    private static View CardRow(IEnumerable<Card?> cards)
+    private View CardRow(IEnumerable<Card?> cards)
     {
         var row = new HorizontalStackLayout { Spacing = 8 };
         foreach (Card? card in cards) { row.Add(CardView(card)); }
-        return new ScrollView { Orientation = ScrollOrientation.Horizontal, Content = row, HeightRequest = 114 };
+        return new ScrollView { Orientation = ScrollOrientation.Horizontal, Content = row, HeightRequest = session.Settings.LargeCards ? 138 : 114 };
     }
 
-    private static Border CardView(Card? card)
+    private Border CardView(Card? card)
     {
         var frame = new Border
         {
-            WidthRequest = 76, HeightRequest = 108, Padding = 8,
+            WidthRequest = session.Settings.LargeCards ? 92 : 76, HeightRequest = session.Settings.LargeCards ? 132 : 108, Padding = 8,
             StrokeShape = new RoundRectangle { CornerRadius = 10 },
             BackgroundColor = card.HasValue ? Color.FromArgb("#F4EFE5") : Ink,
             Stroke = new SolidColorBrush(card.HasValue ? Color.FromArgb("#D4C9AD") : Gold),
@@ -238,8 +259,8 @@ public sealed class BlackjackTablePage : ContentPage
         {
             RowDefinitions = { new RowDefinition { Height = GridLength.Auto }, new RowDefinition { Height = GridLength.Star } },
         };
-        content.Add(new Label { Text = rank, FontSize = 22, FontAttributes = FontAttributes.Bold, TextColor = color }, 0, 0);
-        content.Add(new Label { Text = suit, FontSize = 36, TextColor = color,
+        content.Add(new Label { Text = rank, FontSize = session.Settings.LargeCards ? 28 : 22, FontAttributes = FontAttributes.Bold, TextColor = color }, 0, 0);
+        content.Add(new Label { Text = suit, FontSize = session.Settings.LargeCards ? 44 : 36, TextColor = color,
             HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center }, 0, 1);
         frame.Content = content;
         SemanticProperties.SetDescription(frame, face.ToString());
