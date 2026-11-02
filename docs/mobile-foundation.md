@@ -78,3 +78,19 @@ by this initial pipeline; the original repo's check status is independent.
 After the real-device checklist passes: lobby -> genuine Core round -> actions ->
 settlement -> lobby. Then add local Android profile storage, coins/XP/statistics and
 lifecycle-safe saving. Do not port all casino systems in the foundation milestone.
+
+## Import provenance
+
+Import commit: `f4ebadd7df99e5d9b45fd2f2536c6ca70cd54702`.
+Its parents retain both the mobile initialization and the pinned desktop history.
+`main` and `development` were created at that imported foundation.
+
+## Verified foundation checks
+
+Run: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41386429178
+
+- Original desktop solution: Release build successful, 0 warnings / 0 errors.
+- Existing regression suite: 428 passed, 0 failed, 0 skipped.
+- Localization parity, 136-card artwork validation and control-template contract: passed.
+- Android packaging and real-device launch: recorded separately after completion;
+  no hardware launch has yet been verified.
