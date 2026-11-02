@@ -4,7 +4,7 @@ Independent Android client for Blackjack Empire. This repository starts from the
 Windows desktop application's pinned source and complete Git ancestry, then develops
 a separate touch interface. The desktop repository is unchanged.
 
-## Playable Android preview · 0.5.0
+## Playable Android preview · 0.6.0
 
 Play a complete Blackjack round using the original Core: choose a wager, Hit/Stand,
 Double, Split, Surrender or decide on Insurance when offered. The dealer hole card is
@@ -22,23 +22,33 @@ standings, final net results, XP, season rewards and Dice challenges. A dedicate
 DiceSet shop equips the original cosmetic themes with Coin-only purchases. Dice
 casino entry fees use play cash. Paid Blackjack and Dice games run one at a time;
 Casual Dice and Album can coexist with a saved Blackjack hand.
-Settings include larger playing cards, surrender confirmation, a remembered wager
-and separate reduced-animation settings for packs and dice.
+
+The Casino Floor adds Midnight Reels, Neon Vault and Nine Lives using the original
+Core rules, weighted draws and features. Bonus spins, locked trigger wagers, Neon
+energy and Security Override resume after restarting. Results, wallet, XP, season
+rewards and statistics save together before finite column-reveal feedback. Machine
+paytables, native vector symbols and twenty recent spin receipts are included.
+The Casino Vault fills from 2% of new eligible wagers and grants the original cash,
+tier bonus and card pack when full. Historical wagers establish career tiers without
+retroactive Vault cash. Saved paid games and pending bonuses have explicit cash-game locks.
+Settings include larger playing cards, surrender confirmation, remembered wagers
+and separate reduced-animation settings for packs, dice and slots.
 
 Download `BlackjackEmpire-debug-apk` from a successful **Android foundation** Actions run,
 extract `BlackjackEmpire-debug.apk`, and install it on Android 8.0 or later.
-Install 0.5 over the existing 0.3/0.4 app without uninstalling. The signing identity and
+Install 0.6 over the existing 0.3–0.5 app without uninstalling. The signing identity and
 application ID are unchanged, preserving the local profile. The old 0.1/0.2 previews
 used temporary signing keys and had no durable profile.
 No desktop saves are imported or changed.
 
-[Download the verified 0.5.0 preview](https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41424722457/artifacts/13131553315)
-(approximately 97.5 MB ZIP, available until 2026-11-16). All 478 tests passed; both
+[Download the verified 0.6.0 preview](https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41434585865/artifacts/13135484281)
+(approximately 97.6 MB ZIP, available until 2026-11-16). All 499 tests passed; both
 the desktop reference and Android APK builds completed without warnings or errors.
-The 0.3 profile/restart device test passed. Device acceptance of 0.4/0.5 remains
-pending until the user tests the new integrations.
+The 0.3 profile/restart device test passed; the user reports that 0.5 runs without
+major errors. Device acceptance of the new 0.6 integrations remains pending.
 
-See [Midnight Dice integration and device checklist](docs/mobile-midnight-dice.md),
+See [Casino Floor integration and device checklist](docs/mobile-casino-floor.md),
+[Midnight Dice integration](docs/mobile-midnight-dice.md),
 [Album integration](docs/mobile-collector-album.md), and the
 [profile architecture](docs/mobile-profile-progression.md).
 

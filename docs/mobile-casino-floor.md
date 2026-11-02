@@ -70,9 +70,24 @@ zero-cash bonus continuation, failed paid/bonus/Vault writes, game exclusion,
 separate statistics and challenge packs, bounded history, malformed saves,
 real checksummed file round-trips and Core checkpoint feature equivalence.
 
-Build, regression and artifact results will be recorded after CI completes.
-The authoring environment has no configured .NET/Android SDK; CI is the compiler
-and full regression authority. A successful build is not a device-launch test.
+Verified CI: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41434585865
+
+- Tested app revision: `3c547a6f8c280c2e1f05f68c713229a225990309`.
+- All three jobs succeeded. Desktop Release and signed Android builds completed
+  with 0 warnings / 0 errors.
+- 499 tests passed, 0 failed, 0 skipped: 18 new Mobile Casino Floor tests and three
+  new Core checkpoint tests, alongside the existing 478-test baseline.
+- Original localization parity, control-template contracts and 136-card artwork
+  validation passed. Artwork preparation remains unchanged.
+- Signed APK upload verified; the stable signing key/application ID are unchanged.
+- Download: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41434585865/artifacts/13135484281
+- ZIP: 97,593,582 bytes (approximately 97.6 MB); expires 2026-11-16.
+- Artifact contains `BlackjackEmpire-debug.apk`, its SHA-256 checksum,
+  `build-revision.txt` and artwork validation report.
+
+The authoring environment has no configured .NET/Android SDK; compilation and
+regression were verified in CI. No 0.6 device launch or runtime visual acceptance
+is claimed. App version is 0.6.0, internal version 6.
 
 ## Device acceptance
 
