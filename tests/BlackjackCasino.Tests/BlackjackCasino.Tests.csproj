@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../src/BlackjackCasino.Desktop/LobbyProgressSnapshot.cs" Link="Presentation/LobbyProgressSnapshot.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/AreaPresentationSettings.cs" Link="Persistence/AreaPresentationSettings.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/AppPreferences.cs" Link="Persistence/AppPreferences.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/PlayerStateStore.cs" Link="Persistence/PlayerStateStore.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/ManorPersistence.cs" Link="Persistence/ManorPersistence.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/PlayerProfileStore.cs" Link="Persistence/PlayerProfileStore.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/PlayerProgressionController.cs" Link="Persistence/PlayerProgressionController.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/ManorSoundSynthesis.cs" Link="Audio/ManorSoundSynthesis.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/MergeSoundSynthesis.cs" Link="Audio/MergeSoundSynthesis.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/AudioClip.cs" Link="Audio/AudioClip.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/AudioMixer.cs" Link="Audio/AudioMixer.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/DiceLoungeSynthesis.cs" Link="Audio/DiceLoungeSynthesis.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/ChillLoungeSynthesis.cs" Link="Audio/ChillLoungeSynthesis.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/CasinoMusicSynthesis.cs" Link="Audio/CasinoMusicSynthesis.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/CollectionSoundSynthesis.cs" Link="Audio/CollectionSoundSynthesis.cs" />
+    <Compile Include="../../src/BlackjackCasino.Desktop/CasinoSoundSynthesis.cs" Link="Audio/CasinoSoundSynthesis.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BlackjackCasino.Core\BlackjackCasino.Core.csproj" />
+    <ProjectReference Include="..\..\src\BlackjackCasino.Update\BlackjackCasino.Update.csproj" />
+  </ItemGroup>
+  <ItemGroup><EmbeddedResource Include="../../src/BlackjackCasino.Desktop/Assets/Music/*.wav" LogicalName="BlackjackCasino.Music.%(Filename)%(Extension)" /></ItemGroup>
+</Project>
