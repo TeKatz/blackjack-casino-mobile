@@ -36,8 +36,8 @@ internal static class CasinoStyle
             Background = primary ? Gradient("#E8CF96", "#B48A4B") : Gradient("#1D352D", "#12241F"),
             BorderColor = primary ? Color.FromArgb("#F1D99E") : Color.FromArgb("#3C594C"), BorderWidth = 1,
             TextColor = primary ? Color.FromArgb("#16231E") : Color.FromArgb("#E4CE9F"),
-            Shadow = primary ? new Shadow { Brush = Gold, Opacity = .13f, Radius = 12, Offset = new Point(0, 4) } : null,
         };
+        if (primary) { button.Shadow = new Shadow { Brush = Gold, Opacity = .13f, Radius = 12, Offset = new Point(0, 4) }; }
         button.Pressed += async (_, _) => { if (!VisualMotion.Reduced()) { await button.ScaleToAsync(.97, 65); } };
         button.Released += async (_, _) => { button.Scale = 1; await Task.CompletedTask; };
         button.Clicked += clicked;
