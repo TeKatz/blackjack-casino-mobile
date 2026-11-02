@@ -17,3 +17,7 @@ read docs/mobile-profile-progression.md before changing persistence or progressi
 Keep the application ID and PUBLIC development signing key stable and increase
 ApplicationVersion for updates. That key must never sign production releases.
 Preserve journal/wallet/reward atomicity and test recovery and duplicate-reward behavior.
+
+Mobile 0.4 adds Collector's Album; read docs/mobile-collector-album.md before changing
+pack receipts, reveal progress or artwork. Prepare generated artwork before Android
+builds; never add atlas images directly to runtime card views. Preserve the 0.3 signing identity.

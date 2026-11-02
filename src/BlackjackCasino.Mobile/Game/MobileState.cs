@@ -5,6 +5,7 @@ namespace BlackjackCasino.Mobile.Game;
 
 public sealed class MobileSettings
 {
+    public bool ReducePackAnimations { get; set; }
     public bool LargeCards { get; set; }
     public bool ConfirmSurrender { get; set; } = true;
     public decimal LastWager { get; set; } = 25m;
@@ -39,6 +40,7 @@ public sealed class MobileState
     public ShoeState? Shoe { get; set; }
     public RoundJournal? Journal { get; set; }
     public List<RoundHistoryEntry> History { get; set; } = [];
+    public int RevealedCards { get; set; }
     public ProgressionAward LastAward { get; set; } = ProgressionAward.None;
 }
 

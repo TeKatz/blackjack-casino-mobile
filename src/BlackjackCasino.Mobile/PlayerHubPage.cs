@@ -1,4 +1,5 @@
 using BlackjackCasino.Core;
+using BlackjackCasino.Core.Collections;
 using BlackjackCasino.Mobile.Game;
 using static BlackjackCasino.Mobile.CasinoStyle;
 
@@ -64,6 +65,8 @@ public sealed class PlayerHubPage : ContentPage
         values.Add(Text($"Doubles {stats.Doubles:N0} · Splits {stats.Splits:N0} · Surrenders {stats.Surrenders:N0}"));
         values.Add(Text($"Lifetime XP · {session.Profile.LifetimeExperience:N0}"));
         body.Add(Box(values));
+        body.Add(Button($"ALBUM · {session.Profile.Collection.OwnedCardIds.Count}/{CollectionCatalog.Cards.Count} CARDS · {session.Profile.Collection.Packs.Values.Sum()} PACKS",
+            "ProfileAlbum", async (_, _) => await Navigation.PushAsync(new AlbumPage(session))));
         body.Add(Text("RECENT ROUNDS", 14, Gold));
         if (session.History.Count == 0) { body.Add(Text("Your first completed round will appear here.", 16, Muted)); }
         foreach (RoundHistoryEntry round in session.History.Take(10))
@@ -90,7 +93,7 @@ public sealed class PlayerHubPage : ContentPage
             .Where(item => item.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
             .OrderBy(item => session.Profile.ClaimedChallengeIds.Contains(item.Id) ? 2
                 : ChallengeCatalog.Complete(session.Profile, item) ? 0 : 1).ToArray();
-        body.Add(Text("Blackjack and supported lifetime goals. Claiming uses the same rewards as Desktop, including packs saved for the future Album.", 15, Muted));
+        body.Add(Text("Blackjack and supported lifetime goals. Claiming uses the same rewards as Desktop, including packs you can open in the Album.", 15, Muted));
         foreach (ChallengeDefinition challenge in all.Skip(page * 10).Take(10))
         {
             bool claimed = session.Profile.ClaimedChallengeIds.Contains(challenge.Id);
@@ -124,7 +127,7 @@ public sealed class PlayerHubPage : ContentPage
         SeasonProgressState progress = session.Profile.Seasons[season.Id];
         body.Add(Text(season.Description, 16, Muted));
         body.Add(Text($"Tier {progress.Tier} / {season.Tiers.Count} · {progress.Experience:N0} season XP", 21, Gold));
-        body.Add(Text("Rewards unlock automatically as you play. Packs and cosmetics remain in your profile for later mobile integrations.", 15, Muted));
+        body.Add(Text("Rewards unlock automatically as you play. Packs are available in the Album. Non-title cosmetics remain saved for later integrations.", 15, Muted));
         foreach (SeasonTierDefinition tier in season.Tiers.Skip(page * 10).Take(10))
         {
             string cosmetic = tier.CosmeticId is null ? "" : $" · {CosmeticCatalog.Get(tier.CosmeticId).Name}";
@@ -173,8 +176,10 @@ public sealed class PlayerHubPage : ContentPage
             value => session.UpdateSettings(value, session.Settings.ConfirmSurrender), "LargeCards");
         AddSwitch("Confirm before surrender", session.Settings.ConfirmSurrender,
             value => session.UpdateSettings(session.Settings.LargeCards, value), "ConfirmSurrender");
+        AddSwitch("Reduce pack animations", session.Settings.ReducePackAnimations,
+            session.SetReducedPackAnimations, "ReducePackAnimations");
         body.Add(Text("Every accepted action saves your cash, profile and open round on this device. A previous-save backup is kept for recovery. Uninstalling removes local data.", 15, Muted));
-        body.Add(Text("Mobile preview · 0.3.0", 14, Gold));
+        body.Add(Text("Mobile preview · 0.4.0", 14, Gold));
     }
 
     private void AddSwitch(string caption, bool enabled, Action<bool> changed, string id)

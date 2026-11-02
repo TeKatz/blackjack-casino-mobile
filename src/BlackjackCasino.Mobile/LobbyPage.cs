@@ -1,4 +1,5 @@
 using BlackjackCasino.Core;
+using BlackjackCasino.Core.Collections;
 using BlackjackCasino.Mobile.Game;
 using static BlackjackCasino.Mobile.CasinoStyle;
 
@@ -40,6 +41,13 @@ public sealed class LobbyPage : ContentPage
         body.Add(Box(identity));
         body.Add(Open(session.IsRoundActive ? "RESUME YOUR ROUND" : "PLAY BLACKJACK", "OpenBlackjack",
             () => new BlackjackTablePage(session), true));
+        if (session.Profile.Collection.PendingOpening is not null)
+        {
+            body.Add(Open($"CONTINUE PACK · {session.RevealedCards}/5", "LobbyResumePack", () => new PackRevealPage(session), true));
+        }
+        int packs = session.Profile.Collection.Packs.Values.Sum();
+        body.Add(Open($"COLLECTOR'S ALBUM · {session.Profile.Collection.OwnedCardIds.Count}/{CollectionCatalog.Cards.Count} · {packs} PACKS",
+            "OpenAlbum", () => new AlbumPage(session)));
         body.Add(Open("PROFILE & STATISTICS", "OpenProfile", () => new PlayerHubPage(session, HubSection.Profile)));
         body.Add(Open("CHALLENGES & REWARDS", "OpenChallenges", () => new PlayerHubPage(session, HubSection.Challenges)));
         body.Add(Open("SEASON PASS", "OpenSeason", () => new PlayerHubPage(session, HubSection.Season)));

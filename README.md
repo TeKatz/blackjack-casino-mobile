@@ -4,7 +4,7 @@ Independent Android client for Blackjack Empire. This repository starts from the
 Windows desktop application's pinned source and complete Git ancestry, then develops
 a separate touch interface. The desktop repository is unchanged.
 
-## Playable Android preview · 0.3.0
+## Playable Android preview · 0.4.0
 
 Play a complete Blackjack round using the original Core: choose a wager, Hit/Stand,
 Double, Split, Surrender or decide on Insurance when offered. The dealer hole card is
@@ -13,7 +13,11 @@ hidden until settlement; results update the practice bankroll exactly once.
 A persistent local profile now connects play cash, XP, levels, Coins, Blackjack
 statistics, round history, challenges, the season pass and a title shop. Open rounds
 and rewards save after each accepted action and resume after restarting the app.
-Settings include larger cards, surrender confirmation and a remembered wager.
+The Collector's Album now opens earned packs, displays all 136 existing cards across
+16 themes, recycles duplicates and awards completed themes. Pack reveals resume at the
+saved card after restart. A Coin-only pack shop includes drop odds and purchase confirmation.
+Settings include larger playing cards, surrender confirmation, a remembered wager
+and reduced pack animations.
 
 Download `BlackjackEmpire-debug-apk` from a successful **Android foundation** Actions run,
 extract `BlackjackEmpire-debug.apk`, and install it on Android 8.0 or later.
@@ -21,15 +25,17 @@ extract `BlackjackEmpire-debug.apk`, and install it on Android 8.0 or later.
 one uninstall. Keep 0.3 installed for later updates to preserve its new local profile.
 No desktop saves are imported or changed.
 
-[Download the verified 0.3.0 preview](https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41414109291/artifacts/13127865272).
+The 0.3 profile/restart device test passed. The new 0.4 APK is delivered after CI validation.
 
-See [profile/progression integration and device checklist](docs/mobile-profile-progression.md).
+See [album integration and device checklist](docs/mobile-collector-album.md), and the [profile architecture](docs/mobile-profile-progression.md).
 
 ## Build
 
 Use .NET 10, JDK 17, Android SDK and `dotnet workload install maui-android`.
 
 ```powershell
+python -m pip install Pillow==13.0.0
+python tools/mobile/prepare_collection_art.py
 dotnet build src/BlackjackCasino.Mobile/BlackjackCasino.Mobile.csproj -t:InstallAndroidDependencies -f net10.0-android -p:AcceptAndroidSDKLicenses=true
 dotnet build src/BlackjackCasino.Mobile/BlackjackCasino.Mobile.csproj -c Debug -t:SignAndroidPackage
 ```

@@ -1,4 +1,5 @@
 using BlackjackCasino.Core;
+using BlackjackCasino.Core.Collections;
 
 namespace BlackjackCasino.Mobile.Game;
 
@@ -27,6 +28,7 @@ public sealed class BlackjackSession
     public MobileSettings Settings => state.Settings;
     public IReadOnlyList<RoundHistoryEntry> History => state.History;
     public ProgressionAward LastAward => state.LastAward;
+    public int RevealedCards => state.RevealedCards;
     public BlackjackRound? Round { get; private set; }
     public bool IsRoundActive => Round is { Phase: not RoundPhase.Settled };
     public decimal Committed => Round is { Phase: not RoundPhase.Settled } round
@@ -159,6 +161,41 @@ public sealed class BlackjackSession
         if (!new ProgressionService(Profile).SelectSeason(id)) { throw new InvalidOperationException("Unknown season."); }
     });
 
+    public void SetReducedPackAnimations(bool reduced) => Change(() => Settings.ReducePackAnimations = reduced);
+    public void PurchasePack(CollectionRarity rarity) => Change(() =>
+    {
+        var result = CollectionService.PurchasePack(Profile, rarity);
+        if (!result.Success) { throw new InvalidOperationException(result.Message); }
+    });
+    public void OpenPack(CollectionRarity rarity, Random? random = null) => Change(() =>
+    {
+        var result = CollectionService.OpenPack(Profile, rarity, random);
+        if (!result.Success) { throw new InvalidOperationException(result.Message); }
+        state.RevealedCards = 0;
+    });
+    public void RevealNextCard() => Change(() =>
+    {
+        if (Profile.Collection.PendingOpening is null || state.RevealedCards >= CollectionCatalog.CardsPerPack)
+        { throw new InvalidOperationException("There is no hidden card left in this pack."); }
+        state.RevealedCards++;
+    });
+    public void RevealAllCards() => Change(() =>
+    {
+        if (Profile.Collection.PendingOpening is null) { throw new InvalidOperationException("There is no pack to reveal."); }
+        state.RevealedCards = CollectionCatalog.CardsPerPack;
+    });
+    public void CompletePack(Guid openingId) => Change(() =>
+    {
+        if (state.RevealedCards != CollectionCatalog.CardsPerPack || !CollectionService.CompleteOpening(Profile, openingId))
+        { throw new InvalidOperationException("Reveal this pack's five cards before finishing it."); }
+        state.RevealedCards = 0;
+    });
+    public void ClaimThemeReward(string themeId) => Change(() =>
+    {
+        var result = CollectionService.ClaimThemeCompletionReward(Profile, themeId);
+        if (!result.Success) { throw new InvalidOperationException(result.Message); }
+    });
+
     private void ApplySettlement()
     {
         RoundJournal? journal = state.Journal;
@@ -196,6 +233,9 @@ public sealed class BlackjackSession
         Validate(saved);
         state = MobileJson.Clone(saved);
         _ = new ProgressionService(Profile);
+        if (state.RevealedCards is < 0 or > CollectionCatalog.CardsPerPack
+            || state.RevealedCards != 0 && Profile.Collection.PendingOpening is null)
+        { throw new InvalidDataException("Invalid saved pack reveal."); }
         shoe = state.Shoe is null ? null : new SavedShoe(state.Shoe);
         Round = null;
         RoundJournal? journal = state.Journal;

@@ -23,3 +23,9 @@ Thumbs.db
 *.zip
 *.sha256
 update-manifest.local.json
+
+# Reproducible Android album assets
+src/BlackjackCasino.Mobile/Resources/Images/Collection/
+
+__pycache__/
+*.pyc
