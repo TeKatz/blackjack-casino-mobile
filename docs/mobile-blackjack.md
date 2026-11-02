@@ -35,7 +35,15 @@ refill guards and consecutive rounds without duplicate credits.
 The pure session class is linked into the existing test project; running those tests
 still requires no Android or MAUI workload. UI and APK compilation run in the Android job.
 
-Build/test results and the new APK are recorded after the CI run completes.
+Verified CI run: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41388527228
+- Desktop reference Release build: 0 warnings, 0 errors; no Android workload needed.
+- 441 tests passed, 0 failed, 0 skipped (428 inherited plus 13 new session cases).
+- Android APK build and signing: successful, 0 warnings, 0 errors.
+- Tested code revision: `72b3d3166082aad7dd16dbc1a05c930a710875ae`.
+- Download: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41388527228/artifacts/13116379025
+- Artifact available until 2026-11-16; includes APK, checksum and revision.
+- Feature remains on `mobile/blackjack-round`; no merge to main or development.
+- New-version device testing remains pending. Only the earlier foundation has user-confirmed hardware launch/navigation.
 
 ## Device checklist
 
