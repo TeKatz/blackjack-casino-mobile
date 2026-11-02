@@ -96,6 +96,7 @@ Run: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41386429178
 - Download: https://github.com/TeKatz/blackjack-casino-mobile/actions/runs/41386429178/artifacts/13115926963
 - Artifact ZIP: approximately 83.4 MB, available until 2026-11-16.
 - APK compiled from imported revision `f4ebadd7df99e5d9b45fd2f2536c6ca70cd54702`.
-- Real-device installation, launch and navigation remain unverified; run the hardware checklist.
+- User confirmed real-device installation, launch and navigation of both foundation menus.
+- Milestone 2 proceeds in `mobile/blackjack-round`; see `docs/mobile-blackjack.md`.
 - Subsequent documentation/import-script corrections do not change the compiled app.
 - Bootstrap archive exclusions were narrowed to root files, with shell syntax and archive-content checks passing.
