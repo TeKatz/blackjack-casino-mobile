@@ -28,12 +28,12 @@ internal static class PlayingCardView
         { content.Add(new Border { Stroke = new SolidColorBrush(Color.FromArgb(card.HasValue ? p.Edge : p.Gold).WithAlpha(.5f)), StrokeShape = new RoundRectangle { CornerRadius = 3 }, InputTransparent = true }); }
         if (card is not { } face)
         {
-            var emblem = Text(variant == "card-midnight-sovereign" ? "✦" : "♠", compact ? 25 : 42, Color.FromArgb(p.Gold));
+            var emblem = Text(variant == "card-midnight-sovereign" ? "✦" : "♠\uFE0E", compact ? 25 : 42, Color.FromArgb(p.Gold));
             emblem.HorizontalOptions = LayoutOptions.Center; emblem.VerticalOptions = LayoutOptions.Center; content.Add(emblem);
             SemanticProperties.SetDescription(frame, "Face-down dealer card"); return frame;
         }
         string rank = face.Rank switch { Rank.Ace => "A", Rank.Jack => "J", Rank.Queen => "Q", Rank.King => "K", _ => ((int)face.Rank).ToString() };
-        string suit = face.Suit switch { Suit.Clubs => "♣", Suit.Diamonds => "♦", Suit.Hearts => "♥", _ => "♠" };
+        string suit = face.Suit switch { Suit.Clubs => "♣\uFE0E", Suit.Diamonds => "♦\uFE0E", Suit.Hearts => "♥\uFE0E", _ => "♠\uFE0E" };
         Color ink = Color.FromArgb(face.Suit is Suit.Hearts or Suit.Diamonds ? p.Red : p.Black);
         var corner = Text(rank + "\n" + suit, compact ? 11 : large ? 18 : 15, ink); corner.FontAttributes = FontAttributes.Bold; corner.LineHeight = .85; content.Add(corner);
         var centre = Text(suit, compact ? 25 : large ? 43 : 35, ink); centre.HorizontalOptions = LayoutOptions.Center; centre.VerticalOptions = LayoutOptions.Center; content.Add(centre);
