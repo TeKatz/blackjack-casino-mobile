@@ -14,7 +14,7 @@ public sealed class SlotMachinePage : CasinoPage
     private readonly List<SlotReelColumn> reels = [];
     private readonly VerticalStackLayout header = new() { Padding = new Thickness(18,10), Spacing = 5 };
     private readonly VerticalStackLayout dock = new() { Padding = new Thickness(14,10), Spacing = 8 };
-    private readonly Grid root = new() { RowDefinitions = { new RowDefinition { Height = GridLength.Auto }, new RowDefinition { Height = GridLength.Star }, new RowDefinition { Height = GridLength.Auto } } };
+    private readonly Grid root = new() { ColumnDefinitions = { new ColumnDefinition { Width = GridLength.Star }, new ColumnDefinition { Width = 0 } }, RowDefinitions = { new RowDefinition { Height = GridLength.Auto }, new RowDefinition { Height = GridLength.Star }, new RowDefinition { Height = GridLength.Auto } } };
     private CancellationTokenSource animation = new();
     private bool compact;
     private decimal wager;
@@ -30,16 +30,32 @@ public sealed class SlotMachinePage : CasinoPage
         StageStart = game == MobileSlotGame.NeonVault ? "#060A17" : "#100D18";
         StageEnd = game == MobileSlotGame.NeonVault ? "#14102A" : "#25122C";
         if (game == MobileSlotGame.NineLives)
-        { var background = new Image { Source = "club_cats_background.png", Aspect = Aspect.AspectFill, Opacity = .45, InputTransparent = true }; Grid.SetRowSpan(background,3); root.Add(background); }
+        { var background = new Image { Source = "club_cats_background.png", Aspect = Aspect.AspectFill, Opacity = .45, InputTransparent = true }; Grid.SetRowSpan(background,3); Grid.SetColumnSpan(background,2); root.Add(background); }
         header.BackgroundColor = Color.FromArgb("#090E16"); dock.Background = Gradient("#251A30", "#100E1A");
-        root.Add(header); root.Add(new ScrollView { Content = body },0,1); root.Add(dock,0,2); Content = root;
+        root.Add(header); Grid.SetColumnSpan(header,2); root.Add(new ScrollView { Content = body },0,1); root.Add(dock,0,2); Content = root;
     }
     protected override void OnAppearing()
     { base.OnAppearing(); animation.Dispose(); animation = new(); wager = session.SlotBet(game); Render(); }
     protected override void OnDisappearing() { animation.Cancel(); base.OnDisappearing(); }
 
     protected override void OnSizeAllocated(double width,double height)
-    {base.OnSizeAllocated(width,height);bool next=width>height&&height<550;if(next!=compact){compact=next;Render();}}
+    {
+        base.OnSizeAllocated(width,height);
+        if (width <= 0 || height <= 0) { return; }
+        bool next = width > height && height < 550;
+        if (next == compact) { return; }
+        compact = next;
+        // Native measurement must finish before rebuilding/reparenting its children.
+        Dispatcher.Dispatch(() =>
+        {
+            root.ColumnDefinitions[1].Width = new GridLength(compact ? 200 : 0);
+            Grid.SetRow(dock,compact ? 1 : 2); Grid.SetColumn(dock,compact ? 1 : 0);
+            dock.VerticalOptions = compact ? LayoutOptions.Start : LayoutOptions.Fill;
+            body.Padding = compact ? new Thickness(10,8) : new Thickness(16,22);
+            body.Spacing = compact ? 8 : 16;
+            Render();
+        });
+    }
 
     private void Render()
     {
@@ -82,7 +98,6 @@ public sealed class SlotMachinePage : CasinoPage
         var spin = Button(busy ? "SPINNING…" : free > 0 ? "PLAY FREE SPIN" : $"SPIN · {Cash(wager)}", "SpinSlot", async (_, _) => await Spin(), true);
         spin.IsEnabled = !busy && !locked && (free > 0 || session.Bankroll >= wager);
         dock.Add(spin);
-        if(compact&&dock.Children.Count==2){var first=(View)dock.Children[0];dock.Children.Clear();dock.Add(Columns(first,spin));}
         if (!busy && !locked && free == 0 && session.Bankroll < wager)
         { body.Add(Text("Choose an affordable wager. If play cash is below $1 and no bonus is active, you can refill it.", 15, Muted)); }
         if (!busy && !locked && session.Bankroll < 1 && !session.HasSlotBonus)
@@ -103,7 +118,7 @@ public sealed class SlotMachinePage : CasinoPage
     {
         int columns = game == MobileSlotGame.NeonVault ? 5 : 3;
         int rows = game == MobileSlotGame.Reels ? 3 : game == MobileSlotGame.NeonVault ? 4 : 3;
-        double cellHeight = compact ? (game == MobileSlotGame.NeonVault ? 28 : 36) : game == MobileSlotGame.NeonVault ? 62 : game == MobileSlotGame.NineLives ? 78 : 58;
+        double cellHeight = compact ? (game == MobileSlotGame.NeonVault ? 24 : 32) : game == MobileSlotGame.NeonVault ? 62 : game == MobileSlotGame.NineLives ? 78 : 58;
         var grid = new Grid { ColumnSpacing = game == MobileSlotGame.Reels ? 5 : 2, IsClippedToBounds = true };
         for (int reel = 0; reel < columns; reel++)
         {
@@ -122,7 +137,7 @@ public sealed class SlotMachinePage : CasinoPage
         var bezel = new Border { Content = cabinet, Padding = game == MobileSlotGame.Reels ? 9 : 5,
             BackgroundColor = Color.FromArgb("#05060B"), Stroke = Gradient("#6D4A28", "#F1D393"), StrokeThickness = 2,
             StrokeShape = new RoundRectangle { CornerRadius = 12 }, Shadow = new Shadow { Brush = CasinoFloorPage.Accent(game), Opacity = .2f, Radius = 20 } };
-        var shell = new VerticalStackLayout { Padding = 12, Spacing = 10 };
+        var shell = new VerticalStackLayout { Padding = compact ? 8 : 12, Spacing = compact ? 6 : 10 };
         var marquee = Text(game == MobileSlotGame.Reels ? "✦  M I D N I G H T  ✦" : game == MobileSlotGame.NeonVault ? "N E O N   V A U L T" : "N I N E   L I V E S", 17, CasinoFloorPage.Accent(game));
         marquee.HorizontalTextAlignment = TextAlignment.Center; shell.Add(marquee); shell.Add(bezel);
         var footer = Text(game == MobileSlotGame.Reels ? "THREE REELS  ·  ONE PAYLINE" : game == MobileSlotGame.NeonVault ? "1,024 WAYS  ·  VAULT CLASS" : "THREE REELS  ·  FIVE LUCKY LINES", 8,Gold);

@@ -51,7 +51,7 @@ def tap(*needles, scroll=False, wait=12):
     x,y=find(needles,scroll,wait);adb('shell','input','tap',str(x),str(y));time.sleep(.45)
 
 def shot(name):
-    time.sleep(.5)
+    time.sleep(2)
     path=OUT/(name+'.png')
     path.write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
     with Image.open(path) as im:
@@ -72,8 +72,8 @@ def main():
     print(adb('install','-r',str(apk),timeout=120),flush=True)
     print(adb('shell','pm','list','packages',PACKAGE),flush=True)
     home();shot('01-lobby')
-    tap('OpenBlackjack','Blackjack');shot('02-blackjack-ready')
-    tap('DealCards','DEAL CARDS');time.sleep(.9);shot('03-blackjack-deal')
+    tap('OpenBlackjack','Blackjack');find(['DealCards','DEAL CARDS'],wait=30);time.sleep(2);shot('02-blackjack-ready')
+    tap('DealCards','DEAL CARDS');find(['DealerVisibleTotal'],wait=30);time.sleep(2);shot('03-blackjack-deal')
     # Finish the test hand so other cash games can be exercised honestly.
     for _ in range(5):
         fields=[n.get('text','') for n in nodes()]
@@ -84,14 +84,14 @@ def main():
     for game,title,index in [('Reels','Midnight Reels',4),('NeonVault','Neon Vault',5),('NineLives','Nine Lives',6)]:
         home();tap('OpenSlot-'+game,title,scroll=True)
         xy=find(['SpinSlot','SPIN · $10.00'])
-        recorder=subprocess.Popen(['adb','shell','screenrecord','--size','720x1600','--bit-rate','1000000','--time-limit','5','/sdcard/'+game+'.mp4'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-        time.sleep(.4);adb('shell','input','tap',str(xy[0]),str(xy[1]));time.sleep(2.6)
-        shot(f'{index:02d}-'+game.lower());recorder.wait(timeout=10)
+        recorder=subprocess.Popen(['adb','shell','screenrecord','--size','720x1600','--bit-rate','1000000','--time-limit','15','/sdcard/'+game+'.mp4'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        time.sleep(.4);adb('shell','input','tap',str(xy[0]),str(xy[1]));time.sleep(4);find(['SpinSlot'],wait=35);time.sleep(2)
+        shot(f'{index:02d}-'+game.lower());recorder.wait(timeout=20)
         adb('pull','/sdcard/'+game+'.mp4',str(OUT/(game+'.mp4')))
         if game=='NeonVault':
-            adb('shell','settings','put','system','accelerometer_rotation','0');adb('shell','settings','put','system','user_rotation','1');time.sleep(1.2);shot('05b-neon-landscape')
+            adb('shell','settings','put','system','accelerometer_rotation','0');adb('shell','settings','put','system','user_rotation','1');time.sleep(6);find(['SpinSlot'],wait=30);shot('05b-neon-landscape')
             adb('shell','settings','put','system','user_rotation','0');time.sleep(.8)
-    home();tap('OpenMidnightDice','Midnight Dice');tap('DiceCasual','START CASUAL GAME');tap('RollDice','ROLL FIVE DICE');time.sleep(.8);shot('07-dice')
+    home();tap('OpenMidnightDice','Midnight Dice');tap('DiceCasual','START CASUAL GAME');tap('RollDice','ROLL FIVE DICE');find(['ROLL AGAIN · 2 LEFT'],wait=35);time.sleep(2);shot('07-dice')
     home();tap('OpenAlbumTab','Album');shot('08-album')
     tap('AlbumPacks','PACKS');tap('OpenPack-Common','OPEN PACK',scroll=True);shot('09-pack')
     tap('RevealNextCard','REVEAL CARD 1 / 5');time.sleep(.9);shot('10-pack-reveal')
