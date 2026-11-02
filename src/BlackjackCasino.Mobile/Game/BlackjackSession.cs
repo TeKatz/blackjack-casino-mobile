@@ -4,7 +4,7 @@ using BlackjackCasino.Core.Collections;
 namespace BlackjackCasino.Mobile.Game;
 
 /// <summary>Transactional mobile state; Core owns rules, progression and rewards.</summary>
-public sealed class BlackjackSession
+public sealed partial class BlackjackSession
 {
     public const decimal StartingCash = 1_000m;
     private readonly Func<ICardShoe> createShoe;
@@ -60,6 +60,7 @@ public sealed class BlackjackSession
 
     public void StartRound(decimal bet) => Change(() =>
     {
+        if (IsDiceTableActive) { throw new InvalidOperationException("Finish or forfeit your Midnight Dice casino table first. Its entry fee is already paid."); }
         if (IsRoundActive) { throw new InvalidOperationException("Finish your current round first."); }
         if (bet < Rules.MinimumBet || bet > Rules.MaximumBet || decimal.Truncate(bet) != bet)
         {
@@ -121,7 +122,7 @@ public sealed class BlackjackSession
 
     public void RefillPracticeCash() => Change(() =>
     {
-        if (IsRoundActive || Bankroll >= Rules.MinimumBet) { throw new InvalidOperationException("Refill is available only between rounds when cash is below the minimum bet."); }
+        if (IsRoundActive || IsDiceTableActive || Bankroll >= Rules.MinimumBet) { throw new InvalidOperationException("Refill is available only between games when cash is below the minimum bet."); }
         state.Bankroll = StartingCash;
         state.Journal = null;
         state.LastAward = ProgressionAward.None;
@@ -142,7 +143,7 @@ public sealed class BlackjackSession
         if (!claim.Success) { throw new InvalidOperationException(claim.Message); }
     });
     public static bool SupportedChallenge(ChallengeDefinition challenge) =>
-        (challenge.Category is ChallengeCategory.Blackjack or ChallengeCategory.Lifetime)
+        (challenge.Category is ChallengeCategory.Blackjack or ChallengeCategory.Lifetime or ChallengeCategory.MidnightDice)
         && challenge.Metric != ChallengeMetric.LifetimePlaytimeSeconds;
     public void PurchaseTitle(string id) => Change(() =>
     {
@@ -233,6 +234,7 @@ public sealed class BlackjackSession
         Validate(saved);
         state = MobileJson.Clone(saved);
         _ = new ProgressionService(Profile);
+        ValidateDice();
         if (state.RevealedCards is < 0 or > CollectionCatalog.CardsPerPack
             || state.RevealedCards != 0 && Profile.Collection.PendingOpening is null)
         { throw new InvalidDataException("Invalid saved pack reveal."); }
@@ -293,3 +295,4 @@ public sealed class BlackjackSession
         { throw new InvalidDataException("Invalid saved cards."); }
     }
 }
+

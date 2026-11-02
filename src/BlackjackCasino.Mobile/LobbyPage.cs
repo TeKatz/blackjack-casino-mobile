@@ -39,8 +39,14 @@ public sealed class LobbyPage : ContentPage
         identity.Add(Text($"Play cash · {Cash(session.AvailableCash)} available", 19));
         if (session.IsRoundActive) { identity.Add(Text($"{Cash(session.Committed)} reserved in your saved round", 14, Muted)); }
         body.Add(Box(identity));
-        body.Add(Open(session.IsRoundActive ? "RESUME YOUR ROUND" : "PLAY BLACKJACK", "OpenBlackjack",
-            () => new BlackjackTablePage(session), true));
+        var blackjack = Open(session.IsRoundActive ? "RESUME YOUR ROUND" : "PLAY BLACKJACK", "OpenBlackjack",
+            () => new BlackjackTablePage(session), true);
+        blackjack.IsEnabled = !session.IsDiceTableActive;
+        body.Add(blackjack);
+        body.Add(Open(session.IsDiceTableActive ? "MIDNIGHT DICE · RESUME PAID TABLE" : "MIDNIGHT DICE · CASUAL & CASINO",
+            "OpenMidnightDice", () => new DiceRoomPage(session), session.IsDiceTableActive));
+        if (session.IsDiceTableActive)
+        { body.Add(Text("Your Dice entry fee is paid. Finish or forfeit that table before playing Blackjack.", 14, Muted)); }
         if (session.Profile.Collection.PendingOpening is not null)
         {
             body.Add(Open($"CONTINUE PACK · {session.RevealedCards}/5", "LobbyResumePack", () => new PackRevealPage(session), true));
@@ -53,7 +59,7 @@ public sealed class LobbyPage : ContentPage
         body.Add(Open("SEASON PASS", "OpenSeason", () => new PlayerHubPage(session, HubSection.Season)));
         body.Add(Open("TITLE SHOP", "OpenShop", () => new PlayerHubPage(session, HubSection.Shop)));
         body.Add(Open("SETTINGS", "OpenSettings", () => new PlayerHubPage(session, HubSection.Settings)));
-        body.Add(Text("Progress and open rounds save automatically on this device. Coins unlock cosmetics; play cash funds the table.", 14, Muted));
+        body.Add(Text("Progress, Blackjack hands and Dice games save automatically on this device. Coins unlock cosmetics and packs; play cash funds casino tables.", 14, Muted));
     }
 
     private Button Open(string caption, string id, Func<Page> create, bool primary = false)
@@ -86,3 +92,4 @@ public sealed class LobbyPage : ContentPage
         "title-amber" => Color.FromArgb("#FFBE75"), _ => Gold,
     };
 }
+

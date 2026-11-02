@@ -7,8 +7,8 @@
     <SingleProject>true</SingleProject>
     <ApplicationTitle>Blackjack Empire</ApplicationTitle>
     <ApplicationId>com.tekatz.blackjackcasino.mobile</ApplicationId>
-    <ApplicationDisplayVersion>0.4.0</ApplicationDisplayVersion>
-    <ApplicationVersion>4</ApplicationVersion>
+    <ApplicationDisplayVersion>0.5.0</ApplicationDisplayVersion>
+    <ApplicationVersion>5</ApplicationVersion>
     <SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
     <AndroidPackageFormats>apk</AndroidPackageFormats>
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
@@ -25,3 +25,4 @@
            Text="Prepare Android album images first: python tools/mobile/prepare_collection_art.py (requires Pillow)." />
   </Target>
 </Project>
+

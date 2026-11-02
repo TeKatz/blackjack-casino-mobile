@@ -1,5 +1,6 @@
 using BlackjackCasino.Core;
 using BlackjackCasino.Core.Collections;
+using BlackjackCasino.Core.Kniffel;
 using BlackjackCasino.Mobile.Game;
 using static BlackjackCasino.Mobile.CasinoStyle;
 
@@ -65,6 +66,19 @@ public sealed class PlayerHubPage : ContentPage
         values.Add(Text($"Doubles {stats.Doubles:N0} · Splits {stats.Splits:N0} · Surrenders {stats.Surrenders:N0}"));
         values.Add(Text($"Lifetime XP · {session.Profile.LifetimeExperience:N0}"));
         body.Add(Box(values));
+        KniffelStatistics dice = session.Profile.Kniffel;
+        var diceStats = new VerticalStackLayout { Spacing = 10 };
+        diceStats.Add(Text("MIDNIGHT DICE", 20, Gold));
+        diceStats.Add(Text($"Completed games {dice.CompletedGames:N0} · Best score {dice.BestScore:N0}"));
+        diceStats.Add(Text($"Average score {(dice.CompletedGames == 0 ? 0 : (double)dice.TotalScore / dice.CompletedGames):N1}"));
+        diceStats.Add(Text($"Five of a Kind {dice.FiveOfAKinds:N0} · Upper bonuses {dice.UpperBonuses:N0}"));
+        diceStats.Add(Text($"Full Houses {dice.FullHouses:N0} · Large Straights {dice.LargeStraights:N0}"));
+        diceStats.Add(Text($"Casino starts {dice.CasinoGamesStarted:N0} · Completed {dice.CasinoGamesCompleted:N0}"));
+        diceStats.Add(Text($"Wins {dice.CasinoWins:N0} · Top-two finishes {dice.PodiumFinishes:N0} · Forfeits {dice.Forfeits:N0}"));
+        diceStats.Add(Text($"Wagered {Cash(dice.TotalWagered)} · Returned {Cash(dice.TotalReturned)}"));
+        diceStats.Add(Text($"Net {Net(dice.NetProfit)} · Biggest payout {Cash(dice.BiggestPayout)}"));
+        body.Add(Box(diceStats));
+        body.Add(Button("OPEN MIDNIGHT DICE", "ProfileDice", async (_, _) => await Navigation.PushAsync(new DiceRoomPage(session))));
         body.Add(Button($"ALBUM · {session.Profile.Collection.OwnedCardIds.Count}/{CollectionCatalog.Cards.Count} CARDS · {session.Profile.Collection.Packs.Values.Sum()} PACKS",
             "ProfileAlbum", async (_, _) => await Navigation.PushAsync(new AlbumPage(session))));
         body.Add(Text("RECENT ROUNDS", 14, Gold));
@@ -93,7 +107,7 @@ public sealed class PlayerHubPage : ContentPage
             .Where(item => item.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
             .OrderBy(item => session.Profile.ClaimedChallengeIds.Contains(item.Id) ? 2
                 : ChallengeCatalog.Complete(session.Profile, item) ? 0 : 1).ToArray();
-        body.Add(Text("Blackjack and supported lifetime goals. Claiming uses the same rewards as Desktop, including packs you can open in the Album.", 15, Muted));
+        body.Add(Text("Blackjack, Midnight Dice and supported lifetime goals. Claiming uses the same rewards as Desktop, including packs you can open in the Album.", 15, Muted));
         foreach (ChallengeDefinition challenge in all.Skip(page * 10).Take(10))
         {
             bool claimed = session.Profile.ClaimedChallengeIds.Contains(challenge.Id);
@@ -127,7 +141,7 @@ public sealed class PlayerHubPage : ContentPage
         SeasonProgressState progress = session.Profile.Seasons[season.Id];
         body.Add(Text(season.Description, 16, Muted));
         body.Add(Text($"Tier {progress.Tier} / {season.Tiers.Count} · {progress.Experience:N0} season XP", 21, Gold));
-        body.Add(Text("Rewards unlock automatically as you play. Packs are available in the Album. Non-title cosmetics remain saved for later integrations.", 15, Muted));
+        body.Add(Text("Rewards unlock automatically as you play Blackjack and Midnight Dice. Packs are available in the Album; dice sets can be equipped in the Dice room. Other cosmetics remain saved for later integrations.", 15, Muted));
         foreach (SeasonTierDefinition tier in season.Tiers.Skip(page * 10).Take(10))
         {
             string cosmetic = tier.CosmeticId is null ? "" : $" · {CosmeticCatalog.Get(tier.CosmeticId).Name}";
@@ -141,6 +155,7 @@ public sealed class PlayerHubPage : ContentPage
     {
         Search();
         body.Add(Text("Permanent cosmetic titles. Coins are earned from levels, season tiers and challenges.", 15, Muted));
+        body.Add(Button("DICE SETS · VISIT MIDNIGHT DICE", "ShopDice", async (_, _) => await Navigation.PushAsync(new DiceRoomPage(session))));
         CosmeticDefinition[] titles = CosmeticCatalog.All.Where(item => item.Kind == CosmeticKind.Title
             && (item.ShopAvailable || session.Profile.OwnedCosmeticIds.Contains(item.Id)))
             .Where(item => item.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
@@ -178,8 +193,10 @@ public sealed class PlayerHubPage : ContentPage
             value => session.UpdateSettings(session.Settings.LargeCards, value), "ConfirmSurrender");
         AddSwitch("Reduce pack animations", session.Settings.ReducePackAnimations,
             session.SetReducedPackAnimations, "ReducePackAnimations");
-        body.Add(Text("Every accepted action saves your cash, profile and open round on this device. A previous-save backup is kept for recovery. Uninstalling removes local data.", 15, Muted));
-        body.Add(Text("Mobile preview · 0.4.0", 14, Gold));
+        AddSwitch("Reduce dice animations", session.Settings.ReduceDiceAnimations,
+            session.SetReducedDiceAnimations, "ReduceDiceAnimations");
+        body.Add(Text("Every accepted action saves your cash, profile, open Blackjack hand and Dice games on this device. A previous-save backup is kept for recovery. Uninstalling removes local data.", 15, Muted));
+        body.Add(Text("Mobile preview · 0.5.0", 14, Gold));
     }
 
     private void AddSwitch(string caption, bool enabled, Action<bool> changed, string id)
@@ -206,3 +223,4 @@ public sealed class PlayerHubPage : ContentPage
         Render();
     }
 }
+

@@ -21,3 +21,8 @@ Preserve journal/wallet/reward atomicity and test recovery and duplicate-reward 
 Mobile 0.4 adds Collector's Album; read docs/mobile-collector-album.md before changing
 pack receipts, reveal progress or artwork. Prepare generated artwork before Android
 builds; never add atlas images directly to runtime card views. Preserve the 0.3 signing identity.
+
+Mobile 0.5 adds Midnight Dice. Read docs/mobile-midnight-dice.md before changing
+its checkpoints, paid-game exclusion, AI commit or settlement. Reuse Core Kniffel
+rules/progression; paid tables spend play cash, while cosmetics and packs spend Coins.
+
